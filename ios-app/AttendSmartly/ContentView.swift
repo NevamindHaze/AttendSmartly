@@ -242,6 +242,7 @@ private struct SubjectFormView: View {
     @State private var colorIdentifier: String
     @State private var validationMessage: String?
     @State private var saveError: String?
+    @FocusState private var isAttendanceTargetFocused: Bool
 
     init(subject: Subject?) {
         self.subject = subject
@@ -264,6 +265,7 @@ private struct SubjectFormView: View {
                         Spacer()
                         TextField("75", text: $attendanceTargetText)
                             .keyboardType(.decimalPad)
+                            .focused($isAttendanceTargetFocused)
                             .multilineTextAlignment(.trailing)
                             .frame(width: 80)
                         Text("%")
@@ -308,6 +310,12 @@ private struct SubjectFormView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save", action: saveSubject)
+                }
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Done") {
+                        isAttendanceTargetFocused = false
+                    }
                 }
             }
             .alert("Couldn't Save Subject", isPresented: Binding(
