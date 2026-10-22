@@ -13,7 +13,11 @@ struct ContentView: View {
             }
             .tag(DashboardTab.home)
 
-            placeholderTab(.subjects, message: "Your subjects will appear here.")
+            SubjectsView()
+                .tabItem {
+                    Label(DashboardTab.subjects.title, systemImage: DashboardTab.subjects.symbol)
+                }
+                .tag(DashboardTab.subjects)
             placeholderTab(.timetable, message: "Your weekly class schedule will appear here.")
             placeholderTab(.history, message: "Your attendance records will appear here.")
             placeholderTab(.analytics, message: "Your attendance insights will appear here.")
@@ -42,6 +46,360 @@ struct ContentView: View {
             Label(tab.title, systemImage: tab.symbol)
         }
         .tag(tab)
+    }
+}
+
+private struct SubjectsView: View {
+    @Environment(\.modelContext) private var modelContext
+    @Query(sort: \Subject.name) private var subjects: [Subject]
+
+    @State private var showingArchived = false
+    @State private var showingSubjectForm = false
+    @State private var subjectToEdit: Subject?
+    @State private var saveError: String?
+
+    private var visibleSubjects: [Subject] {
+        subjects.filter { $0.isArchived == showingArchived }
+    }
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if visibleSubjects.isEmpty {
+                    emptyState
+                } else {
+                    List {
+                        ForEach(visibleSubjects) { subject in
+                            Button {
+                                subjectToEdit = subject
+                                showingSubjectForm = true
+                            } label: {
+                                SubjectRowView(subject: subject)
+                            }
+                            .buttonStyle(.plain)
+                            .swipeActions(edge: .trailing) {
+                                Button {
+                                    toggleArchive(subject)
+                                } label: {
+                                    Label(
+                                        subject.isArchived ? "Unarchive" : "Archive",
+                                        systemImage: subject.isArchived ? "tray.and.arrow.up" : "archivebox"
+                                    )
+                                }
+                                .tint(subject.isArchived ? DashboardPalette.green : .orange)
+                            }
+                        }
+                    }
+                    .listStyle(.insetGrouped)
+                }
+            }
+            .navigationTitle("Subjects")
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        showingArchived.toggle()
+                    } label: {
+                        Label(
+                            showingArchived ? "Active" : "Archived",
+                            systemImage: showingArchived ? "books.vertical" : "archivebox"
+                        )
+                    }
+                    .accessibilityLabel(showingArchived ? "Show active subjects" : "Show archived subjects")
+                }
+
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        subjectToEdit = nil
+                        showingSubjectForm = true
+                    } label: {
+                        Label("Add Subject", systemImage: "plus")
+                    }
+                }
+            }
+            .sheet(isPresented: $showingSubjectForm, onDismiss: {
+                subjectToEdit = nil
+            }) {
+                SubjectFormView(subject: subjectToEdit)
+            }
+            .alert("Couldn't Save Changes", isPresented: Binding(
+                get: { saveError != nil },
+                set: { if !$0 { saveError = nil } }
+            )) {
+                Button("OK", role: .cancel) {
+                    saveError = nil
+                }
+            } message: {
+                Text(saveError ?? "Please try again.")
+            }
+        }
+    }
+
+    private var emptyState: some View {
+        VStack(spacing: 14) {
+            Image(systemName: showingArchived ? "archivebox" : "book.closed")
+                .font(.system(size: 38, weight: .medium))
+                .foregroundStyle(DashboardPalette.green)
+            Text(showingArchived ? "No archived subjects" : "No subjects yet")
+                .font(.title3.bold())
+            Text(
+                showingArchived
+                    ? "Subjects you archive will appear here."
+                    : "Add your first subject to start organizing your classes."
+            )
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+            .multilineTextAlignment(.center)
+
+            if !showingArchived {
+                Button {
+                    subjectToEdit = nil
+                    showingSubjectForm = true
+                } label: {
+                    Label("Add Subject", systemImage: "plus")
+                        .font(.headline)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(DashboardPalette.green)
+                .padding(.top, 4)
+            }
+        }
+        .padding(32)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(uiColor: .systemGroupedBackground))
+    }
+
+    private func toggleArchive(_ subject: Subject) {
+        let previousValue = subject.isArchived
+        subject.isArchived.toggle()
+
+        do {
+            try modelContext.save()
+        } catch {
+            subject.isArchived = previousValue
+            saveError = error.localizedDescription
+        }
+    }
+}
+
+private struct SubjectRowView: View {
+    let subject: Subject
+
+    var body: some View {
+        HStack(spacing: 14) {
+            Circle()
+                .fill(SubjectColorOption(rawValue: subject.colorIdentifier)?.color ?? .gray)
+                .frame(width: 14, height: 14)
+
+            VStack(alignment: .leading, spacing: 5) {
+                HStack {
+                    Text(subject.name)
+                        .font(.headline)
+                        .foregroundStyle(.primary)
+                    if subject.isArchived {
+                        Text("Archived")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 3)
+                            .background(Color.secondary.opacity(0.12), in: Capsule())
+                    }
+                }
+
+                Text("Target: \(subject.attendanceTarget, specifier: "%.1f")%")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+
+                if !subject.notes.isEmpty {
+                    Text(subject.notes)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                }
+            }
+
+            Spacer(minLength: 0)
+
+            Image(systemName: "chevron.right")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.tertiary)
+        }
+        .padding(.vertical, 5)
+        .contentShape(Rectangle())
+    }
+}
+
+private struct SubjectFormView: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
+
+    private let subject: Subject?
+
+    @State private var name: String
+    @State private var attendanceTargetText: String
+    @State private var isArchived: Bool
+    @State private var notes: String
+    @State private var colorIdentifier: String
+    @State private var validationMessage: String?
+    @State private var saveError: String?
+
+    init(subject: Subject?) {
+        self.subject = subject
+        _name = State(initialValue: subject?.name ?? "")
+        _attendanceTargetText = State(initialValue: String(subject?.attendanceTarget ?? 75))
+        _isArchived = State(initialValue: subject?.isArchived ?? false)
+        _notes = State(initialValue: subject?.notes ?? "")
+        _colorIdentifier = State(initialValue: subject?.colorIdentifier ?? "green")
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Subject details") {
+                    TextField("Subject name", text: $name)
+                        .textInputAutocapitalization(.words)
+
+                    HStack {
+                        Text("Attendance target")
+                        Spacer()
+                        TextField("75", text: $attendanceTargetText)
+                            .keyboardType(.decimalPad)
+                            .multilineTextAlignment(.trailing)
+                            .frame(width: 80)
+                        Text("%")
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Picker("Color", selection: $colorIdentifier) {
+                        ForEach(SubjectColorOption.allCases) { option in
+                            Label(option.title, systemImage: "circle.fill")
+                                .foregroundStyle(option.color)
+                                .tag(option.rawValue)
+                        }
+                    }
+                }
+
+                Section("Notes") {
+                    TextField("Optional notes", text: $notes, axis: .vertical)
+                        .lineLimit(3...6)
+                }
+
+                Section {
+                    Toggle("Archived", isOn: $isArchived)
+                } footer: {
+                    Text("Archived subjects are hidden from the active list but are not deleted.")
+                }
+
+                if let validationMessage {
+                    Section {
+                        Text(validationMessage)
+                            .font(.footnote)
+                            .foregroundStyle(.red)
+                    }
+                }
+            }
+            .navigationTitle(subject == nil ? "Add Subject" : "Edit Subject")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save", action: saveSubject)
+                }
+            }
+            .alert("Couldn't Save Subject", isPresented: Binding(
+                get: { saveError != nil },
+                set: { if !$0 { saveError = nil } }
+            )) {
+                Button("OK", role: .cancel) {
+                    saveError = nil
+                }
+            } message: {
+                Text(saveError ?? "Please try again.")
+            }
+        }
+    }
+
+    private func saveSubject() {
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty else {
+            validationMessage = "Enter a subject name."
+            return
+        }
+
+        guard
+            let target = Double(attendanceTargetText.trimmingCharacters(in: .whitespacesAndNewlines)),
+            (1...100).contains(target)
+        else {
+            validationMessage = "Enter a target percentage from 1 to 100."
+            return
+        }
+
+        validationMessage = nil
+
+        let originalName = subject?.name
+        let originalTarget = subject?.attendanceTarget
+        let originalArchiveStatus = subject?.isArchived
+        let originalNotes = subject?.notes
+        let originalColorIdentifier = subject?.colorIdentifier
+        var insertedSubject: Subject?
+
+        if let subject {
+            subject.name = trimmedName
+            subject.attendanceTarget = target
+            subject.isArchived = isArchived
+            subject.notes = notes.trimmingCharacters(in: .whitespacesAndNewlines)
+            subject.colorIdentifier = colorIdentifier
+        } else {
+            let newSubject = Subject(
+                name: trimmedName,
+                attendanceTarget: target,
+                isArchived: isArchived,
+                notes: notes.trimmingCharacters(in: .whitespacesAndNewlines),
+                colorIdentifier: colorIdentifier
+            )
+            modelContext.insert(newSubject)
+            insertedSubject = newSubject
+        }
+
+        do {
+            try modelContext.save()
+            dismiss()
+        } catch {
+            if let subject {
+                subject.name = originalName ?? subject.name
+                subject.attendanceTarget = originalTarget ?? subject.attendanceTarget
+                subject.isArchived = originalArchiveStatus ?? subject.isArchived
+                subject.notes = originalNotes ?? subject.notes
+                subject.colorIdentifier = originalColorIdentifier ?? subject.colorIdentifier
+            }
+            if let insertedSubject {
+                modelContext.delete(insertedSubject)
+            }
+            saveError = error.localizedDescription
+        }
+    }
+}
+
+private enum SubjectColorOption: String, CaseIterable, Identifiable {
+    case green
+    case blue
+    case coral
+
+    var id: String { rawValue }
+
+    var title: String {
+        rawValue.capitalized
+    }
+
+    var color: Color {
+        switch self {
+        case .green: DashboardPalette.green
+        case .blue: DashboardPalette.blue
+        case .coral: DashboardPalette.coral
+        }
     }
 }
 
