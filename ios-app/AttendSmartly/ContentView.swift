@@ -1,18 +1,6 @@
 import SwiftUI
 
 struct ContentView: View {
-    private let attendedClasses = 18
-    private let totalClasses = 20
-
-    private var attendanceRate: Double {
-        Double(attendedClasses) / Double(totalClasses)
-    }
-
-    var body: some View {
-
-
-
-
     @State private var selectedTab: DashboardTab = .home
 
     var body: some View {
@@ -294,25 +282,6 @@ private enum DashboardPalette {
     static let blue = Color(red: 0.26, green: 0.48, blue: 0.72)
     static let coral = Color(red: 0.82, green: 0.38, blue: 0.29)
     static let ink = Color.primary
-}
-
-#Preview {
-    ContentView()
-}
-    }
-
-    private func placeholderSection(title: String, message: String) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(title)
-                .font(.title3.bold())
-            Text(message)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(16)
-                .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
-        }
-    }
 }
 
 #Preview {
