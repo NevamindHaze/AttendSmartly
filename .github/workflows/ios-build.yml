@@ -69,3 +69,10 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
             build
+
+      - name: Upload iOS Simulator app
+        uses: actions/upload-artifact@v4
+        with:
+          name: AttendSmartly-iOS-Simulator
+          path: ${{ runner.temp }}/AttendSmartlyDerivedData/Build/Products/Debug-iphonesimulator/AttendSmartly.app
+          if-no-files-found: error
