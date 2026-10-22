@@ -1,0 +1,71 @@
+name: Build iOS App
+
+on:
+  push:
+    paths:
+      - "ios-app/**"
+      - ".github/workflows/ios-build.yml"
+  pull_request:
+    paths:
+      - "ios-app/**"
+      - ".github/workflows/ios-build.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build iOS Simulator App
+    runs-on: macos-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Detect Xcode scheme and configuration
+        id: xcode-project
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild -list -json -project ios-app/AttendSmartly.xcodeproj \
+            > "$RUNNER_TEMP/attendsmartly-xcode-project.json"
+
+          python3 - "$RUNNER_TEMP/attendsmartly-xcode-project.json" "$GITHUB_OUTPUT" <<'PY'
+          import json
+          import sys
+
+          with open(sys.argv[1], encoding="utf-8") as project_file:
+              project = json.load(project_file)["project"]
+
+          schemes = project.get("schemes", [])
+          configurations = project.get("configurations", [])
+          scheme = "AttendSmartly"
+          configuration = "Debug"
+
+          if scheme not in schemes:
+              raise SystemExit(f"Expected scheme {scheme!r}; found: {schemes}")
+          if configuration not in configurations:
+              raise SystemExit(
+                  f"Expected configuration {configuration!r}; found: {configurations}"
+              )
+
+          with open(sys.argv[2], "a", encoding="utf-8") as output_file:
+              output_file.write(f"scheme={scheme}\n")
+              output_file.write(f"configuration={configuration}\n")
+          PY
+
+      - name: Build for iOS Simulator
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -project ios-app/AttendSmartly.xcodeproj \
+            -scheme "${{ steps.xcode-project.outputs.scheme }}" \
+            -configuration "${{ steps.xcode-project.outputs.configuration }}" \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/AttendSmartlyDerivedData" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            build
