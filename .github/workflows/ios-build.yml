@@ -76,3 +76,47 @@ jobs:
           name: AttendSmartly-iOS-Simulator
           path: ${{ runner.temp }}/AttendSmartlyDerivedData/Build/Products/Debug-iphonesimulator/AttendSmartly.app
           if-no-files-found: error
+
+  build-device-ipa:
+    name: Build Unsigned iOS Device IPA
+    runs-on: macos-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build for generic iOS device
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -project ios-app/AttendSmartly.xcodeproj \
+            -scheme AttendSmartly \
+            -configuration Debug \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath "$RUNNER_TEMP/AttendSmartlyDeviceDerivedData" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Package unsigned iOS IPA
+        shell: bash
+        run: |
+          set -euo pipefail
+          package_path="$RUNNER_TEMP/AttendSmartlyIPA"
+          app_path="$RUNNER_TEMP/AttendSmartlyDeviceDerivedData/Build/Products/Debug-iphoneos/AttendSmartly.app"
+          mkdir -p "$package_path/Payload"
+          cp -R "$app_path" "$package_path/Payload/AttendSmartly.app"
+          (
+            cd "$package_path"
+            /usr/bin/ditto -c -k --sequesterRsrc --keepParent Payload "$RUNNER_TEMP/AttendSmartly.ipa"
+          )
+
+      - name: Upload unsigned iOS IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: AttendSmartly-iOS-Unsigned-IPA
+          path: ${{ runner.temp }}/AttendSmartly.ipa
+          if-no-files-found: error
