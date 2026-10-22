@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 @main
 struct AttendSmartlyApp: App {
@@ -6,5 +7,12 @@ struct AttendSmartlyApp: App {
         WindowGroup {
             ContentView()
         }
+        .modelContainer(for: [
+            Subject.self,
+            TimetableEntry.self,
+            AttendanceSession.self,
+            AttendanceUnit.self,
+            Holiday.self
+        ])
     }
 }
