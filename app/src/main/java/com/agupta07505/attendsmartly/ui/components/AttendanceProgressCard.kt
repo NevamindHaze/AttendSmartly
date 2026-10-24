@@ -7,17 +7,19 @@
 
 package com.agupta07505.attendsmartly.ui.components
 
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.TrendingUp
+import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -32,191 +34,227 @@ fun AttendanceProgressCard(
     showSafeBunksAndGoal: Boolean = true
 ) {
     val isAboveTarget = summary.percentage >= summary.targetPercentage
-    val primaryColor = MaterialTheme.colorScheme.primary
+    val progressColor = if (isAboveTarget) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.tertiary
+    val animatedProgress by animateFloatAsState(
+        targetValue = (summary.percentage / 100.0).toFloat().coerceIn(0f, 1f),
+        animationSpec = tween(900),
+        label = "attendance-progress"
+    )
+    val nextStep = if (isAboveTarget) summary.safeBunks.toString()
+        else if (summary.requiredUnitsToTarget == Int.MAX_VALUE) "∞"
+        else summary.requiredUnitsToTarget.toString()
 
     Column(
         modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        // Main Bento Section: Overall Attendance Container
         Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .testTag("attendance_progress_card"),
             shape = RoundedCornerShape(28.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer
-            ),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            Column(
+                modifier = Modifier.padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(18.dp)
             ) {
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "OVERALL ATTENDANCE",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                    )
-                    Text(
-                        text = "${String.format("%.1f", summary.percentage)}%",
-                        style = MaterialTheme.typography.displayMedium,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                    Text(
-                        text = "${summary.presentUnits} / ${summary.totalConductedUnits} Units Attended",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f)
-                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                        Text(
+                            text = "YOUR ATTENDANCE",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.1.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "Learning progress",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = if (isAboveTarget) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.tertiaryContainer
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 11.dp, vertical = 7.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(5.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (isAboveTarget) Icons.Default.CheckCircle else Icons.Filled.TrendingUp,
+                                contentDescription = null,
+                                modifier = Modifier.size(15.dp),
+                                tint = if (isAboveTarget) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onTertiaryContainer
+                            )
+                            Text(
+                                text = if (isAboveTarget) "On track" else "Keep going",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isAboveTarget) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onTertiaryContainer
+                            )
+                        }
+                    }
                 }
 
-                // Gauge Circular Ring Display
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.size(72.dp)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    CircularProgressIndicator(
-                        progress = { 1f },
-                        modifier = Modifier.fillMaxSize(),
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.15f),
-                        strokeWidth = 8.dp
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
+                        Text(
+                            text = "${summary.percentage.roundToInt()}%",
+                            fontSize = 52.sp,
+                            lineHeight = 56.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "${summary.presentUnits} of ${summary.totalConductedUnits} units attended",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.size(78.dp)
+                    ) {
+                        CircularProgressIndicator(
+                            progress = { 1f },
+                            modifier = Modifier.fillMaxSize(),
+                            color = MaterialTheme.colorScheme.surfaceVariant,
+                            strokeWidth = 9.dp
+                        )
+                        CircularProgressIndicator(
+                            progress = { animatedProgress },
+                            modifier = Modifier.fillMaxSize(),
+                            color = progressColor,
+                            strokeWidth = 9.dp
+                        )
+                        Text(
+                            text = "${summary.targetPercentage.roundToInt()}%",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                LinearProgressIndicator(
+                    progress = { animatedProgress },
+                    modifier = Modifier.fillMaxWidth().height(9.dp),
+                    color = progressColor,
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    AttendanceMetric(
+                        modifier = Modifier.weight(1f),
+                        label = "PRESENT",
+                        value = summary.presentUnits.toString(),
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer
                     )
-                    CircularProgressIndicator(
-                        progress = { (summary.percentage / 100.0).toFloat().coerceIn(0f, 1f) },
-                        modifier = Modifier.fillMaxSize(),
-                        color = primaryColor,
-                        strokeWidth = 8.dp
+                    AttendanceMetric(
+                        modifier = Modifier.weight(1f),
+                        label = "TARGET",
+                        value = "${summary.targetPercentage.roundToInt()}%",
+                        containerColor = MaterialTheme.colorScheme.primaryContainer
                     )
-                    Text(
-                        text = "${summary.percentage.roundToInt()}%",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    AttendanceMetric(
+                        modifier = Modifier.weight(1f),
+                        label = if (isAboveTarget) "SAFE BUNKS" else "TO RECOVER",
+                        value = nextStep,
+                        containerColor = MaterialTheme.colorScheme.tertiaryContainer
                     )
                 }
             }
         }
 
-        // Secondary Bento Row (2 Grid Tiles) - Optional (shown in Analytics, omitted on Home)
         if (showSafeBunksAndGoal) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Tile 1: Safe Bunks / Required Classes
                 Card(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(115.dp),
+                    modifier = Modifier.weight(1f).height(112.dp),
                     shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    ),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                 ) {
                     Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp),
+                        modifier = Modifier.fillMaxSize().padding(16.dp),
                         verticalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text(
-                            text = if (isAboveTarget) "SAFE BUNKS" else "REQUIRED",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.5.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Text("SAFE BUNKS", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Column {
-                            Text(
-                                text = if (isAboveTarget) "${summary.safeBunks}" else "${summary.requiredUnitsToTarget}",
-                                style = MaterialTheme.typography.headlineLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                text = if (isAboveTarget) {
-                                    if (summary.safeBunks > 0) "Classes can be missed" else "At target limit (0 bunks left)"
-                                } else {
-                                    "Consecutive to attend"
-                                },
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1
-                            )
+                            Text("${summary.safeBunks}", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                            Text(if (summary.safeBunks == 1) "class to miss" else "classes to miss", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
-
-                // Tile 2: Goal Status
                 Card(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(115.dp),
+                    modifier = Modifier.weight(1f).height(112.dp),
                     shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    ),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                 ) {
                     Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp),
+                        modifier = Modifier.fillMaxSize().padding(16.dp),
                         verticalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text(
-                            text = "GOAL STATUS",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.5.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
+                        Text("GOAL STATUS", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                                 Icon(
-                                    imageVector = if (isAboveTarget) Icons.Default.Shield else Icons.AutoMirrored.Filled.TrendingUp,
+                                    imageVector = if (isAboveTarget) Icons.Default.Shield else Icons.Filled.TrendingUp,
                                     contentDescription = null,
-                                    modifier = Modifier.size(16.dp),
-                                    tint = if (isAboveTarget) primaryColor else MaterialTheme.colorScheme.error
+                                    modifier = Modifier.size(17.dp),
+                                    tint = if (isAboveTarget) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.error
                                 )
-                                Text(
-                                    text = if (isAboveTarget) "On Track" else "Needs Work",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
+                                Text(if (isAboveTarget) "On track" else "Needs a boost", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                             }
-                            LinearProgressIndicator(
-                                progress = { (summary.percentage / 100.0).toFloat().coerceIn(0f, 1f) },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(6.dp),
-                                color = primaryColor,
-                                trackColor = MaterialTheme.colorScheme.outlineVariant
-                            )
-                            Text(
-                                text = "Target: ${summary.targetPercentage.roundToInt()}%",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            Text("Goal: ${summary.targetPercentage.roundToInt()}%", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun AttendanceMetric(
+    modifier: Modifier,
+    label: String,
+    value: String,
+    containerColor: androidx.compose.ui.graphics.Color
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(18.dp),
+        color = containerColor
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 11.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            Text(label, fontSize = 9.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+            Text(value, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onSurface, maxLines = 1)
         }
     }
 }

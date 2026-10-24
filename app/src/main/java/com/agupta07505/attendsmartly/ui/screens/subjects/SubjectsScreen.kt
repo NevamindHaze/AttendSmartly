@@ -31,6 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.agupta07505.attendsmartly.data.local.entity.SubjectEntity
+import com.agupta07505.attendsmartly.ui.theme.pastelTint
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,6 +51,7 @@ fun SubjectsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
                 title = { Text("Subjects", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
@@ -105,7 +107,7 @@ fun SubjectsScreen(
             if (showArchived) {
                 Surface(
                     color = MaterialTheme.colorScheme.tertiaryContainer,
-                    shape = RoundedCornerShape(8.dp),
+                    shape = RoundedCornerShape(24.dp),
                     modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
                 ) {
                     Text(
@@ -168,7 +170,9 @@ fun SubjectsScreen(
                                 .fillMaxWidth()
                                 .testTag("subject_card_${subject.id}")
                                 .clickable { onNavigateToSubjectDetail(subject.id) },
-                            shape = RoundedCornerShape(16.dp)
+                            shape = RoundedCornerShape(24.dp),
+                            colors = CardDefaults.elevatedCardColors(containerColor = pastelTint(subjectColor, MaterialTheme.colorScheme.surface)),
+                            elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp)
                         ) {
                             Column(
                                 modifier = Modifier

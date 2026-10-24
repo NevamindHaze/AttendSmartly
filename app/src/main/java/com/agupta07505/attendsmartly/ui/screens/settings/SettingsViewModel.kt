@@ -30,6 +30,14 @@ class SettingsViewModel(
     val userPreferences: StateFlow<UserPreferences> = preferencesRepository.userPreferencesFlow
         .stateIn(viewModelScope, SharingStarted.Eagerly, UserPreferences())
 
+    fun updateProfileName(name: String) {
+        viewModelScope.launch { preferencesRepository.updateProfileName(name) }
+    }
+
+    fun updateProfilePhotoUri(uri: String) {
+        viewModelScope.launch { preferencesRepository.updateProfilePhotoUri(uri) }
+    }
+
     fun updateNotificationsEnabled(enabled: Boolean) {
         viewModelScope.launch {
             preferencesRepository.updateNotificationsEnabled(enabled)

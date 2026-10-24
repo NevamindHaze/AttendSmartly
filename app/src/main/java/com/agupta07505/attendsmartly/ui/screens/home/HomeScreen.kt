@@ -7,7 +7,9 @@
 
 package com.agupta07505.attendsmartly.ui.screens.home
 
+import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -25,8 +27,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -45,6 +50,7 @@ import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.format.TextStyle
 import java.util.Locale
+import coil.compose.AsyncImage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -71,16 +77,20 @@ fun HomeScreen(
 
     val userPreferences by viewModel.userPreferences.collectAsState()
     val isSelectedDateInSemester by viewModel.isSelectedDateInSemester.collectAsState()
+    val context = androidx.compose.ui.platform.LocalContext.current
 
-    val greeting = remember {
-        val hour = LocalTime.now().hour
-        when (hour) {
+
+
+    val timeGreeting = remember {
+        when (LocalTime.now().hour) {
             in 4..11 -> "Good Morning ☀️"
             in 12..16 -> "Good Afternoon 🌤️"
             in 17..22 -> "Good Evening 🌙"
             else -> "Night Owl 🦉"
         }
     }
+    val greeting = userPreferences.profileName.trim().takeIf { it.isNotEmpty() }
+        ?.let { "Hi, $it" } ?: timeGreeting
 
     val selectedDate = remember(selectedDateIso) {
         try { LocalDate.parse(selectedDateIso, DateUtils.isoDateFormatter) } catch (e: Exception) { LocalDate.now() }
@@ -105,7 +115,6 @@ fun HomeScreen(
         }
     }
 
-    val context = androidx.compose.ui.platform.LocalContext.current
 
     // Auto-attendance presence check when viewing Home screen during class time
     LaunchedEffect(selectedDateIso, userPreferences.autoAttendanceEnabled) {
@@ -128,28 +137,36 @@ fun HomeScreen(
                     Column {
                         Text(
                             text = greeting,
-                            style = MaterialTheme.typography.titleMedium,
+                            style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold
                         )
-                        Text(
-                            text = DateUtils.formatDateToHuman(selectedDateIso),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Row(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { showDatePickerDialog = true }
+                                .testTag("date_picker_label"),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = DateUtils.formatDateToHuman(selectedDateIso),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Icon(Icons.Default.CalendarMonth, contentDescription = "Choose date", modifier = Modifier.padding(start = 4.dp).size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                     }
                 },
                 actions = {
-                    IconButton(
-                        onClick = { showDatePickerDialog = true },
-                        modifier = Modifier.testTag("date_picker_icon_btn")
-                    ) {
-                        Icon(Icons.Default.CalendarMonth, contentDescription = "Pick Date")
-                    }
-                    IconButton(
-                        onClick = onNavigateToSettings,
-                        modifier = Modifier.testTag("settings_icon_btn")
-                    ) {
-                        Icon(Icons.Default.Settings, contentDescription = "Settings")
+                    Box(modifier = Modifier.padding(end = 12.dp).size(48.dp)) {
+                        ProfileAvatar(
+                            photoUri = userPreferences.profilePhotoUri,
+                            contentDescription = "Open profile and settings",
+                            modifier = Modifier
+                                .align(Alignment.Center)
+                                .size(48.dp)
+                                .clickable(onClick = onNavigateToSettings)
+                                .testTag("profile_avatar_button")
+                        )
                     }
                 }
             )
@@ -255,52 +272,68 @@ fun HomeScreen(
                 }
             }
 
-            LazyRow(
-                state = dateRowState,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            Box(
+                modifier = Modifier.fillMaxWidth().height(160.dp).padding(horizontal = 16.dp)
             ) {
-                items(dates) { date ->
-                    val dateIso = date.format(DateUtils.isoDateFormatter)
-                    val isSelected = dateIso == selectedDateIso
-                    val isToday = date == LocalDate.now()
+                Image(
+                    painter = painterResource(com.agupta07505.attendsmartly.R.drawable.bunk_mascot),
+                    contentDescription = null,
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier.align(Alignment.TopEnd).size(136.dp).offset(x = (-8).dp, y = (-24).dp)
+                )
+                LazyRow(
+                    state = dateRowState,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(104.dp)
+                        .align(Alignment.BottomCenter),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                        items(dates) { date ->
+                            val dateIso = date.format(DateUtils.isoDateFormatter)
+                            val isSelected = dateIso == selectedDateIso
+                            val isToday = date == LocalDate.now()
 
-                    val dayName = date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault())
-                    val dayNum = date.dayOfMonth
+                            val dayName = date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault())
+                            val dayNum = date.dayOfMonth
 
-                    Card(
-                        modifier = Modifier
-                            .testTag("date_chip_$dateIso")
-                            .clip(RoundedCornerShape(16.dp))
-                            .clickable { viewModel.selectDate(dateIso) },
-                        colors = CardDefaults.cardColors(
-                            containerColor = if (isSelected) MaterialTheme.colorScheme.primary
-                            else if (isToday) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
-                            else MaterialTheme.colorScheme.surfaceVariant
-                        ),
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                text = dayName,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Text(
-                                text = dayNum.toString(),
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
-                            )
+                            Card(
+                                modifier = Modifier
+                                    .testTag("date_chip_$dateIso")
+                                    .shadow(
+                                        elevation = if (isSelected) 6.dp else 2.dp,
+                                        shape = RoundedCornerShape(24.dp)
+                                    )
+                                    .clip(RoundedCornerShape(24.dp))
+                                    .clickable { viewModel.selectDate(dateIso) },
+                                colors = CardDefaults.cardColors(
+                                    containerColor = if (isSelected) MaterialTheme.colorScheme.primary
+                                    else if (isToday) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                                    else MaterialTheme.colorScheme.surfaceVariant
+                                ),
+                                shape = RoundedCornerShape(24.dp)
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text(
+                                        text = dayName,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Text(
+                                        text = dayNum.toString(),
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                            }
                         }
-                    }
+
                 }
             }
 
@@ -617,5 +650,34 @@ fun HomeScreen(
             },
             onDismiss = { showAddExtraClassDialog = false }
         )
+    }
+
+}
+
+@Composable
+private fun ProfileAvatar(
+    photoUri: String,
+    contentDescription: String,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier.clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer),
+        contentAlignment = Alignment.Center
+    ) {
+        if (photoUri.isNotBlank()) {
+            AsyncImage(
+                model = Uri.parse(photoUri),
+                contentDescription = contentDescription,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+        } else {
+            Image(
+                painter = painterResource(com.agupta07505.attendsmartly.R.drawable.bunk_mascot),
+                contentDescription = contentDescription,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
     }
 }

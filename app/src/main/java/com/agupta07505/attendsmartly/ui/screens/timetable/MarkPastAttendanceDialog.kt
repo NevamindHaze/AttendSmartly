@@ -1,4 +1,4 @@
-﻿/*
+/*
  * AttendSmartly (2026)
  * © Animesh Gupta — github.com/agupta07505
  * Licensed under the GNU GPL v3 License
@@ -113,7 +113,7 @@ fun MarkPastAttendanceDialog(
                         containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f),
                         contentColor = MaterialTheme.colorScheme.onTertiaryContainer
                     ),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(20.dp)
                 ) {
                     Row(
                         modifier = Modifier
@@ -174,7 +174,7 @@ fun MarkPastAttendanceDialog(
 
                             ElevatedCard(
                                 modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(16.dp)
+                                shape = RoundedCornerShape(20.dp)
                             ) {
                                 Column(
                                     modifier = Modifier
@@ -251,7 +251,7 @@ fun MarkPastAttendanceDialog(
                                                 }
                                             },
                                             enabled = !isProcessing && (currentInput.toIntOrNull() ?: 0) > 0,
-                                            shape = RoundedCornerShape(12.dp)
+                                            shape = RoundedCornerShape(20.dp)
                                         ) {
                                             if (isProcessing) {
                                                 CircularProgressIndicator(
@@ -288,7 +288,7 @@ fun MarkPastAttendanceDialog(
                 Button(
                     onClick = onDismiss,
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(20.dp)
                 ) {
                     Text("Done")
                 }

@@ -7,15 +7,39 @@
 
 package com.agupta07505.attendsmartly.ui.navigation
 
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -67,20 +91,59 @@ fun NavGraph(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
             if (showBottomBar) {
-                NavigationBar {
-                    Screen.bottomNavItems.forEach { screen ->
-                        val selected = currentRoute == screen.route
-                        NavigationBarItem(
-                            selected = selected,
-                            onClick = {
-                                navigateToTab(screen.route)
-                            },
-                            icon = {
-                                screen.icon?.let { Icon(it, contentDescription = screen.title) }
-                            },
-                            label = { Text(screen.title) },
-                            modifier = Modifier.testTag("nav_item_${screen.route}")
-                        )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color.Transparent)
+                        .padding(top = 4.dp, bottom = 8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Screen.bottomNavItems.forEach { screen ->
+                            val selected = currentRoute == screen.route
+                            val buttonWidth by animateDpAsState(
+                                targetValue = if (selected) 58.dp else 52.dp,
+                                animationSpec = tween(220),
+                                label = "nav-width-${screen.route}"
+                            )
+                            val iconScale by animateFloatAsState(
+                                targetValue = if (selected) 1.12f else 1f,
+                                animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessHigh),
+                                label = "nav-icon-${screen.route}"
+                            )
+                            val itemColor by animateColorAsState(
+                                targetValue = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+                                animationSpec = tween(220),
+                                label = "nav-color-${screen.route}"
+                            )
+                            val foreground = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+
+                            Box(
+                                modifier = Modifier
+                                    .size(width = buttonWidth, height = 52.dp)
+                                    .shadow(elevation = if (selected) 8.dp else 4.dp, shape = RoundedCornerShape(18.dp))
+                                    .clip(RoundedCornerShape(18.dp))
+                                    .background(itemColor)
+                                    .clickable { navigateToTab(screen.route) }
+                                    .testTag("nav_item_${screen.route}"),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                screen.icon?.let {
+                                    Icon(
+                                        imageVector = it,
+                                        contentDescription = screen.title,
+                                        tint = foreground,
+                                        modifier = Modifier
+                                            .size(25.dp)
+                                            .graphicsLayer { scaleX = iconScale; scaleY = iconScale }
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -90,10 +153,26 @@ fun NavGraph(
             navController = navController,
             startDestination = initialRoute,
             modifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding()),
-            enterTransition = { fadeIn(animationSpec = tween(150)) },
-            exitTransition = { fadeOut(animationSpec = tween(150)) },
-            popEnterTransition = { fadeIn(animationSpec = tween(150)) },
-            popExitTransition = { fadeOut(animationSpec = tween(150)) }
+            enterTransition = {
+                slideInHorizontally(initialOffsetX = { it / 14 }, animationSpec = spring(dampingRatio = 0.78f, stiffness = 420f)) +
+                    scaleIn(initialScale = 0.97f, animationSpec = spring(dampingRatio = 0.78f, stiffness = 420f)) +
+                    fadeIn(animationSpec = tween(180))
+            },
+            exitTransition = {
+                slideOutHorizontally(targetOffsetX = { -it / 20 }, animationSpec = tween(150)) +
+                    scaleOut(targetScale = 0.99f, animationSpec = tween(150)) +
+                    fadeOut(animationSpec = tween(140))
+            },
+            popEnterTransition = {
+                slideInHorizontally(initialOffsetX = { -it / 14 }, animationSpec = spring(dampingRatio = 0.78f, stiffness = 420f)) +
+                    scaleIn(initialScale = 0.97f, animationSpec = spring(dampingRatio = 0.78f, stiffness = 420f)) +
+                    fadeIn(animationSpec = tween(180))
+            },
+            popExitTransition = {
+                slideOutHorizontally(targetOffsetX = { it / 20 }, animationSpec = tween(150)) +
+                    scaleOut(targetScale = 0.99f, animationSpec = tween(150)) +
+                    fadeOut(animationSpec = tween(140))
+            }
         ) {
             composable(Screen.Onboarding.route) {
                 OnboardingScreen(

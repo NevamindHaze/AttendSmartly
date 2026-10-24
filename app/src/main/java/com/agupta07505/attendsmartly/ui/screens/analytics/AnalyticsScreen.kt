@@ -42,6 +42,7 @@ fun AnalyticsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
                 title = { Text("Attendance Analytics", fontWeight = FontWeight.Bold) }
             )
         }
@@ -68,7 +69,7 @@ fun AnalyticsScreen(
                     Card(
                         modifier = Modifier.weight(1f),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)),
-                        shape = RoundedCornerShape(16.dp)
+                        shape = RoundedCornerShape(20.dp)
                     ) {
                         Column(
                             modifier = Modifier.padding(14.dp),
@@ -87,7 +88,7 @@ fun AnalyticsScreen(
                     Card(
                         modifier = Modifier.weight(1f),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)),
-                        shape = RoundedCornerShape(16.dp)
+                        shape = RoundedCornerShape(20.dp)
                     ) {
                         Column(
                             modifier = Modifier.padding(14.dp),
@@ -110,7 +111,7 @@ fun AnalyticsScreen(
             item {
                 ElevatedCard(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp)
+                    shape = RoundedCornerShape(24.dp)
                 ) {
                     Column(
                         modifier = Modifier.padding(20.dp),
@@ -181,7 +182,7 @@ fun AnalyticsScreen(
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-                        shape = RoundedCornerShape(16.dp)
+                        shape = RoundedCornerShape(20.dp)
                     ) {
                         Column(
                             modifier = Modifier
@@ -207,7 +208,7 @@ fun AnalyticsScreen(
                             .fillMaxWidth()
                             .testTag("analytics_subject_card_${sub.id}")
                             .clickable { onNavigateToSubjectDetail(sub.id) },
-                        shape = RoundedCornerShape(16.dp)
+                        shape = RoundedCornerShape(20.dp)
                     ) {
                         Column(
                             modifier = Modifier
@@ -285,7 +286,7 @@ fun AnalyticsScreen(
                                 }
 
                                 Surface(
-                                    shape = RoundedCornerShape(12.dp),
+                                    shape = RoundedCornerShape(20.dp),
                                     color = if (isAboveTarget) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.errorContainer
                                 ) {
                                     Text(
@@ -310,7 +311,7 @@ fun AnalyticsScreen(
 
                             // Status message box
                             Surface(
-                                shape = RoundedCornerShape(10.dp),
+                                shape = RoundedCornerShape(24.dp),
                                 color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
                                 modifier = Modifier.fillMaxWidth()
                             ) {

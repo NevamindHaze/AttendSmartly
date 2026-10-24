@@ -331,7 +331,7 @@ fun AddEditSubjectDialog(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(16.dp)
-                            .clip(RoundedCornerShape(8.dp))
+                            .clip(RoundedCornerShape(24.dp))
                             .background(rainbowGradient)
                     )
 
@@ -413,7 +413,7 @@ fun AddEditSubjectDialog(
                         )
 
                         Surface(
-                            shape = RoundedCornerShape(16.dp),
+                            shape = RoundedCornerShape(20.dp),
                             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
                             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)),
                             modifier = Modifier.fillMaxWidth()
@@ -501,7 +501,7 @@ fun AddEditSubjectDialog(
                                                 )
                                             }
                                         },
-                                        shape = RoundedCornerShape(12.dp),
+                                        shape = RoundedCornerShape(20.dp),
                                         modifier = Modifier.fillMaxWidth()
                                     ) {
                                         if (isFetchingLocation) {
@@ -580,7 +580,7 @@ fun AddEditSubjectDialog(
                     }
 
                     Surface(
-                        shape = RoundedCornerShape(8.dp),
+                        shape = RoundedCornerShape(24.dp),
                         color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
                     ) {
                         Text(
@@ -638,7 +638,7 @@ fun AddEditSubjectDialog(
                             onSave(updated)
                         },
                         enabled = name.isNotBlank(),
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(20.dp),
                         modifier = Modifier.testTag("save_subject_btn")
                     ) {
                         Text("Save Subject")

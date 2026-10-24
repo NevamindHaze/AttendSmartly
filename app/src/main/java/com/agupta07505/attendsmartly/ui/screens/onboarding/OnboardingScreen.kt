@@ -1,4 +1,4 @@
-﻿/*
+/*
  * AttendSmartly (2026)
  * © Animesh Gupta — github.com/agupta07505
  * Licensed under the GNU GPL v3 License
@@ -189,7 +189,7 @@ fun OnboardingScreen(
                                 onFinishOnboarding()
                             }
                         },
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(20.dp),
                         modifier = Modifier
                             .height(48.dp)
                             .testTag("get_started_btn")

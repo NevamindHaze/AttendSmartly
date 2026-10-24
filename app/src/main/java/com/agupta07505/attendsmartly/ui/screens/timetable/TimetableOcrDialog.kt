@@ -193,7 +193,7 @@ private fun PickImageStep(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp))
+                .clip(RoundedCornerShape(24.dp))
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(
@@ -210,7 +210,7 @@ private fun PickImageStep(
                             MaterialTheme.colorScheme.tertiary.copy(alpha = 0.6f)
                         )
                     ),
-                    RoundedCornerShape(20.dp)
+                    RoundedCornerShape(24.dp)
                 )
                 .padding(20.dp),
             contentAlignment = Alignment.Center
@@ -259,7 +259,7 @@ private fun PickImageStep(
         // Gemini API Key Config Card inside Scanner
         Card(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
             )
@@ -282,7 +282,7 @@ private fun PickImageStep(
                     }
                     if (apiKeyInput.isNotBlank()) {
                         Surface(
-                            shape = RoundedCornerShape(8.dp),
+                            shape = RoundedCornerShape(24.dp),
                             color = MaterialTheme.colorScheme.primaryContainer
                         ) {
                             Text(
@@ -294,7 +294,7 @@ private fun PickImageStep(
                         }
                     } else {
                         Surface(
-                            shape = RoundedCornerShape(8.dp),
+                            shape = RoundedCornerShape(24.dp),
                             color = MaterialTheme.colorScheme.errorContainer
                         ) {
                             Text(
@@ -366,7 +366,7 @@ private fun PickImageStep(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
-                shape = RoundedCornerShape(14.dp)
+                shape = RoundedCornerShape(24.dp)
             ) {
                 Icon(Icons.Default.PhotoLibrary, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
@@ -381,7 +381,7 @@ private fun PickImageStep(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),
-                shape = RoundedCornerShape(14.dp)
+                shape = RoundedCornerShape(24.dp)
             ) {
                 Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                 Spacer(modifier = Modifier.width(8.dp))
@@ -634,7 +634,7 @@ private fun PreviewStep(
                             colors = CardDefaults.cardColors(
                                 containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                             ),
-                            shape = RoundedCornerShape(14.dp),
+                            shape = RoundedCornerShape(24.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Row(
@@ -796,7 +796,7 @@ private fun PreviewStep(
         OutlinedButton(
             onClick = { showAddDialog = true },
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp)
+            shape = RoundedCornerShape(20.dp)
         ) {
             Icon(Icons.Default.Add, contentDescription = null)
             Spacer(modifier = Modifier.width(6.dp))
@@ -811,7 +811,7 @@ private fun PreviewStep(
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
             ),
-            shape = RoundedCornerShape(12.dp)
+            shape = RoundedCornerShape(20.dp)
         ) {
             Column(
                 modifier = Modifier.padding(12.dp),
@@ -875,7 +875,7 @@ private fun PreviewStep(
                 .fillMaxWidth()
                 .height(52.dp),
             enabled = items.isNotEmpty(),
-            shape = RoundedCornerShape(16.dp)
+            shape = RoundedCornerShape(20.dp)
         ) {
             Icon(Icons.Default.AutoAwesome, contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
@@ -1135,7 +1135,7 @@ private fun ErrorStep(
                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://aistudio.google.com/app/apikey"))
                 context.startActivity(intent)
             },
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(20.dp),
             modifier = Modifier.fillMaxWidth(0.9f)
         ) {
             Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null, modifier = Modifier.size(18.dp))
@@ -1147,7 +1147,7 @@ private fun ErrorStep(
 
         Button(
             onClick = onRetry,
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(20.dp),
             modifier = Modifier.fillMaxWidth(0.9f)
         ) {
             Text("Try Again")
@@ -1196,7 +1196,7 @@ private fun SuccessStep(
 
         Button(
             onClick = onDone,
-            shape = RoundedCornerShape(14.dp),
+            shape = RoundedCornerShape(24.dp),
             modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp)

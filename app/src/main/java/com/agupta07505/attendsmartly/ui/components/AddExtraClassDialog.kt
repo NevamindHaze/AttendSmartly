@@ -313,7 +313,7 @@ fun AddExtraClassDialog(
                             onDismiss()
                         },
                         enabled = selectedSubject != null && startTime.isNotBlank() && endTime.isNotBlank() && dateIso.isNotBlank(),
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(20.dp),
                         modifier = Modifier.testTag("extra_class_confirm_btn")
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))

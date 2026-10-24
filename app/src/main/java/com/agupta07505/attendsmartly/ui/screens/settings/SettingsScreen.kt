@@ -13,6 +13,7 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import com.agupta07505.attendsmartly.util.LocationHelper
 import androidx.compose.animation.*
@@ -51,6 +52,7 @@ import androidx.compose.ui.unit.sp
 import com.agupta07505.attendsmartly.BuildConfig
 import com.agupta07505.attendsmartly.R
 import com.agupta07505.attendsmartly.util.DateUtils
+import coil.compose.AsyncImage
 import com.agupta07505.attendsmartly.util.GitHubReleaseInfo
 import java.time.Instant
 import java.time.LocalDate
@@ -131,6 +133,20 @@ fun SettingsScreen(
     var showClearDataConfirm by remember { mutableStateOf(false) }
     var showCustomColorDialog by remember { mutableStateOf(false) }
     var activeDatePickerTarget by remember { mutableStateOf<String?>(null) } // "START" or "END"
+    var profileNameDraft by remember(prefs.profileName) { mutableStateOf(prefs.profileName) }
+    val profilePhotoPicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        uri?.let {
+            try {
+                context.contentResolver.takePersistableUriPermission(
+                    it,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            } catch (_: Exception) { }
+            viewModel.updateProfilePhotoUri(it.toString())
+        }
+    }
 
     val isCheckingUpdate by viewModel.isCheckingUpdate.collectAsState()
     var updateReleaseInfo by remember { mutableStateOf<GitHubReleaseInfo?>(null) }
@@ -191,6 +207,7 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
                 title = {
                     Text(
                         text = currentSection?.title ?: "Settings",
@@ -254,7 +271,7 @@ fun SettingsScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(top = 4.dp),
-                            shape = RoundedCornerShape(20.dp),
+                            shape = RoundedCornerShape(24.dp),
                             colors = CardDefaults.cardColors(
                                 containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
                             )
@@ -274,7 +291,7 @@ fun SettingsScreen(
                                     Box(contentAlignment = Alignment.Center) {
                                         Icon(
                                             Icons.Default.School,
-                                            contentDescription = "AttendSmartly",
+                                            contentDescription = "Bunk",
                                             tint = MaterialTheme.colorScheme.onPrimary,
                                             modifier = Modifier.size(26.dp)
                                         )
@@ -287,7 +304,7 @@ fun SettingsScreen(
                                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
                                         Text(
-                                            text = "AttendSmartly",
+                                            text = "Bunk",
                                             style = MaterialTheme.typography.titleLarge,
                                             fontWeight = FontWeight.Bold
                                         )
@@ -309,6 +326,92 @@ fun SettingsScreen(
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
+                                }
+                            }
+                        }
+
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(24.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surface
+                            )
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(18.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Text(
+                                    text = "Your profile",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(14.dp)
+                                ) {
+                                    Surface(
+                                        modifier = Modifier.size(72.dp),
+                                        shape = CircleShape,
+                                        color = MaterialTheme.colorScheme.primaryContainer
+                                    ) {
+                                        if (prefs.profilePhotoUri.isNotBlank()) {
+                                            AsyncImage(
+                                                model = Uri.parse(prefs.profilePhotoUri),
+                                                contentDescription = "Profile photo",
+                                                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                                modifier = Modifier.fillMaxSize()
+                                            )
+                                        } else {
+                                            androidx.compose.foundation.Image(
+                                                painter = painterResource(R.drawable.bunk_mascot),
+                                                contentDescription = "Bunk mascot profile photo",
+                                                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                                modifier = Modifier.fillMaxSize()
+                                            )
+                                        }
+                                    }
+                                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                        Text(
+                                            text = prefs.profileName.ifBlank { "Your name" },
+                                            style = MaterialTheme.typography.titleSmall,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                        TextButton(
+                                            onClick = {
+                                                profilePhotoPicker.launch(
+                                                    PickVisualMediaRequest(
+                                                        ActivityResultContracts.PickVisualMedia.ImageOnly
+                                                    )
+                                                )
+                                            },
+                                            contentPadding = PaddingValues(horizontal = 0.dp)
+                                        ) {
+                                            Text(if (prefs.profilePhotoUri.isBlank()) "Add profile photo" else "Change profile photo")
+                                        }
+                                    }
+                                }
+                                OutlinedTextField(
+                                    value = profileNameDraft,
+                                    onValueChange = { profileNameDraft = it.take(32) },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    label = { Text("Name") },
+                                    singleLine = true,
+                                    trailingIcon = {
+                                        if (profileNameDraft.trim() != prefs.profileName) {
+                                            IconButton(onClick = {
+                                                viewModel.updateProfileName(profileNameDraft.trim())
+                                            }) {
+                                                Icon(Icons.Default.Check, contentDescription = "Save name")
+                                            }
+                                        }
+                                    }
+                                )
+                                if (prefs.profilePhotoUri.isNotBlank()) {
+                                    TextButton(onClick = { viewModel.updateProfilePhotoUri("") }) {
+                                        Text("Remove profile photo")
+                                    }
                                 }
                             }
                         }
@@ -339,7 +442,7 @@ fun SettingsScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = "Made with ❤️ by Animesh Gupta • GNU GPL-3.0",
+                                text = "Designed & developed by @NevamindHaze · GPL-3.0",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontWeight = FontWeight.Medium,
@@ -371,7 +474,7 @@ fun SettingsScreen(
                                 // 1. ATTENDANCE & ACADEMIC GOALS
                                 Card(
                                     modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(20.dp)
+                                    shape = RoundedCornerShape(24.dp)
                                 ) {
                                     Column(
                                         modifier = Modifier.padding(18.dp),
@@ -382,7 +485,7 @@ fun SettingsScreen(
                                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                                         ) {
                                             Surface(
-                                                shape = RoundedCornerShape(10.dp),
+                                                shape = RoundedCornerShape(24.dp),
                                                 color = MaterialTheme.colorScheme.primaryContainer,
                                                 modifier = Modifier.size(38.dp)
                                             ) {
@@ -444,7 +547,7 @@ fun SettingsScreen(
 
                                 Card(
                                     modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(20.dp)
+                                    shape = RoundedCornerShape(24.dp)
                                 ) {
                                     Column(
                                         modifier = Modifier.padding(18.dp),
@@ -455,7 +558,7 @@ fun SettingsScreen(
                                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                                         ) {
                                             Surface(
-                                                shape = RoundedCornerShape(10.dp),
+                                                shape = RoundedCornerShape(24.dp),
                                                 color = MaterialTheme.colorScheme.primaryContainer,
                                                 modifier = Modifier.size(38.dp)
                                             ) {
@@ -517,7 +620,7 @@ fun SettingsScreen(
 
                                 Card(
                                     modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(20.dp)
+                                    shape = RoundedCornerShape(24.dp)
                                 ) {
                                     Column(
                                         modifier = Modifier.padding(18.dp),
@@ -534,7 +637,7 @@ fun SettingsScreen(
                                                 modifier = Modifier.weight(1f)
                                             ) {
                                                 Surface(
-                                                    shape = RoundedCornerShape(10.dp),
+                                                    shape = RoundedCornerShape(24.dp),
                                                     color = MaterialTheme.colorScheme.primaryContainer,
                                                     modifier = Modifier.size(38.dp)
                                                 ) {
@@ -675,7 +778,7 @@ fun SettingsScreen(
                                                 }
 
                                                 Surface(
-                                                    shape = RoundedCornerShape(10.dp),
+                                                    shape = RoundedCornerShape(24.dp),
                                                     color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
                                                     modifier = Modifier.fillMaxWidth()
                                                 ) {
@@ -707,7 +810,7 @@ fun SettingsScreen(
                                 // Location-Based Auto-Attendance Card
                                 Card(
                                     modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(20.dp)
+                                    shape = RoundedCornerShape(24.dp)
                                 ) {
                                     Column(
                                         modifier = Modifier.padding(18.dp),
@@ -724,7 +827,7 @@ fun SettingsScreen(
                                                 horizontalArrangement = Arrangement.spacedBy(12.dp)
                                             ) {
                                                 Surface(
-                                                    shape = RoundedCornerShape(10.dp),
+                                                    shape = RoundedCornerShape(24.dp),
                                                     color = MaterialTheme.colorScheme.primaryContainer,
                                                     modifier = Modifier.size(38.dp)
                                                 ) {
@@ -774,7 +877,7 @@ fun SettingsScreen(
                                             val hasBgPermission = LocationHelper.hasBackgroundLocationPermission(context)
 
                                             Surface(
-                                                shape = RoundedCornerShape(12.dp),
+                                                shape = RoundedCornerShape(20.dp),
                                                 color = if (hasPermission) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
                                                         else MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f)
                                             ) {
@@ -833,7 +936,7 @@ fun SettingsScreen(
 
                                             // Dwell rule indicator
                                             Surface(
-                                                shape = RoundedCornerShape(12.dp),
+                                                shape = RoundedCornerShape(20.dp),
                                                 color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                                             ) {
                                                 Row(
@@ -897,7 +1000,7 @@ fun SettingsScreen(
                                 // 2. NOTIFICATIONS & ALERTS
                                 Card(
                                     modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(20.dp)
+                                    shape = RoundedCornerShape(24.dp)
                                 ) {
                                     Column(
                                         modifier = Modifier.padding(18.dp),
@@ -914,7 +1017,7 @@ fun SettingsScreen(
                                                 horizontalArrangement = Arrangement.spacedBy(12.dp)
                                             ) {
                                                 Surface(
-                                                    shape = RoundedCornerShape(10.dp),
+                                                    shape = RoundedCornerShape(24.dp),
                                                     color = MaterialTheme.colorScheme.primaryContainer,
                                                     modifier = Modifier.size(38.dp)
                                                 ) {
@@ -975,7 +1078,7 @@ fun SettingsScreen(
                                                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                                                     ) {
                                                         Surface(
-                                                            shape = RoundedCornerShape(10.dp),
+                                                            shape = RoundedCornerShape(24.dp),
                                                             color = if (prefs.notificationSound) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
                                                             modifier = Modifier.size(38.dp)
                                                         ) {
@@ -1011,7 +1114,7 @@ fun SettingsScreen(
                                                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                                                     ) {
                                                         Surface(
-                                                            shape = RoundedCornerShape(10.dp),
+                                                            shape = RoundedCornerShape(24.dp),
                                                             color = if (prefs.notificationVibrate) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
                                                             modifier = Modifier.size(38.dp)
                                                         ) {
@@ -1045,7 +1148,7 @@ fun SettingsScreen(
                                 // 3. APPEARANCE & THEME
                                 Card(
                                     modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(20.dp)
+                                    shape = RoundedCornerShape(24.dp)
                                 ) {
                                     Column(
                                         modifier = Modifier.padding(18.dp),
@@ -1056,7 +1159,7 @@ fun SettingsScreen(
                                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                                         ) {
                                             Surface(
-                                                shape = RoundedCornerShape(10.dp),
+                                                shape = RoundedCornerShape(24.dp),
                                                 color = MaterialTheme.colorScheme.primaryContainer,
                                                 modifier = Modifier.size(38.dp)
                                             ) {
@@ -1096,7 +1199,7 @@ fun SettingsScreen(
                                                         containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                                                     ),
                                                     border = if (isSelected) BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary) else null,
-                                                    shape = RoundedCornerShape(12.dp),
+                                                    shape = RoundedCornerShape(20.dp),
                                                     modifier = Modifier.weight(1f)
                                                 ) {
                                                     Column(
@@ -1133,7 +1236,7 @@ fun SettingsScreen(
                                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                                         ) {
                                             Surface(
-                                                shape = RoundedCornerShape(10.dp),
+                                                shape = RoundedCornerShape(24.dp),
                                                 color = MaterialTheme.colorScheme.primaryContainer,
                                                 modifier = Modifier.size(38.dp)
                                             ) {
@@ -1174,7 +1277,7 @@ fun SettingsScreen(
                                                         containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                                                     ),
                                                     border = if (isSelected) BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary) else null,
-                                                    shape = RoundedCornerShape(12.dp),
+                                                    shape = RoundedCornerShape(20.dp),
                                                     modifier = Modifier.weight(1f)
                                                 ) {
                                                     Column(
@@ -1282,7 +1385,7 @@ fun SettingsScreen(
 
                                                 // Live Theme Palette Preview Bar
                                                 Surface(
-                                                    shape = RoundedCornerShape(12.dp),
+                                                    shape = RoundedCornerShape(20.dp),
                                                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                                                     modifier = Modifier.fillMaxWidth()
                                                 ) {
@@ -1332,7 +1435,7 @@ fun SettingsScreen(
                                 // 4. AI & TIMETABLE OCR
                                 Card(
                                     modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(20.dp)
+                                    shape = RoundedCornerShape(24.dp)
                                 ) {
                                     Column(
                                         modifier = Modifier.padding(18.dp),
@@ -1343,7 +1446,7 @@ fun SettingsScreen(
                                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                                         ) {
                                             Surface(
-                                                shape = RoundedCornerShape(10.dp),
+                                                shape = RoundedCornerShape(24.dp),
                                                 color = MaterialTheme.colorScheme.primaryContainer,
                                                 modifier = Modifier.size(38.dp)
                                             ) {
@@ -1400,7 +1503,7 @@ fun SettingsScreen(
                                                 try { context.startActivity(intent) } catch (_: Exception) {}
                                             },
                                             modifier = Modifier.fillMaxWidth(),
-                                            shape = RoundedCornerShape(12.dp)
+                                            shape = RoundedCornerShape(20.dp)
                                         ) {
                                             Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null, modifier = Modifier.size(18.dp))
                                             Spacer(modifier = Modifier.width(8.dp))
@@ -1414,7 +1517,7 @@ fun SettingsScreen(
                                 // 5. DATA MANAGEMENT & BACKUPS
                                 Card(
                                     modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(20.dp)
+                                    shape = RoundedCornerShape(24.dp)
                                 ) {
                                     Column(
                                         modifier = Modifier.padding(18.dp),
@@ -1425,7 +1528,7 @@ fun SettingsScreen(
                                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                                         ) {
                                             Surface(
-                                                shape = RoundedCornerShape(10.dp),
+                                                shape = RoundedCornerShape(24.dp),
                                                 color = MaterialTheme.colorScheme.primaryContainer,
                                                 modifier = Modifier.size(38.dp)
                                             ) {
@@ -1451,7 +1554,7 @@ fun SettingsScreen(
                                         Button(
                                             onClick = { exportBackupLauncher.launch("AttendSmartly_backup.json") },
                                             modifier = Modifier.fillMaxWidth(),
-                                            shape = RoundedCornerShape(12.dp)
+                                            shape = RoundedCornerShape(20.dp)
                                         ) {
                                             Icon(Icons.Default.Upload, null, modifier = Modifier.size(18.dp))
                                             Spacer(modifier = Modifier.width(8.dp))
@@ -1461,7 +1564,7 @@ fun SettingsScreen(
                                         OutlinedButton(
                                             onClick = { importBackupLauncher.launch(arrayOf("application/json", "text/plain", "application/octet-stream", "*/*")) },
                                             modifier = Modifier.fillMaxWidth(),
-                                            shape = RoundedCornerShape(12.dp)
+                                            shape = RoundedCornerShape(20.dp)
                                         ) {
                                             Icon(Icons.Default.Download, null, modifier = Modifier.size(18.dp))
                                             Spacer(modifier = Modifier.width(8.dp))
@@ -1471,7 +1574,7 @@ fun SettingsScreen(
                                         OutlinedButton(
                                             onClick = { exportCsvLauncher.launch("AttendSmartly_attendance.csv") },
                                             modifier = Modifier.fillMaxWidth(),
-                                            shape = RoundedCornerShape(12.dp)
+                                            shape = RoundedCornerShape(20.dp)
                                         ) {
                                             Icon(Icons.Default.TableChart, null, modifier = Modifier.size(18.dp))
                                             Spacer(modifier = Modifier.width(8.dp))
@@ -1487,7 +1590,7 @@ fun SettingsScreen(
                                             onClick = { showClearDataConfirm = true },
                                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
                                             modifier = Modifier.fillMaxWidth(),
-                                            shape = RoundedCornerShape(12.dp)
+                                            shape = RoundedCornerShape(20.dp)
                                         ) {
                                             Icon(Icons.Default.DeleteForever, null, modifier = Modifier.size(18.dp))
                                             Spacer(modifier = Modifier.width(8.dp))
@@ -1501,7 +1604,7 @@ fun SettingsScreen(
                                 // 6. ABOUT & UPDATES
                                 Card(
                                     modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(20.dp)
+                                    shape = RoundedCornerShape(24.dp)
                                 ) {
                                     Column(
                                         modifier = Modifier.padding(18.dp),
@@ -1521,7 +1624,7 @@ fun SettingsScreen(
                                                 Box(contentAlignment = Alignment.Center) {
                                                     Icon(
                                                         Icons.Default.School,
-                                                        contentDescription = "AttendSmartly",
+                                                        contentDescription = "Bunk",
                                                         tint = MaterialTheme.colorScheme.primary,
                                                         modifier = Modifier.size(28.dp)
                                                     )
@@ -1534,7 +1637,7 @@ fun SettingsScreen(
                                                     verticalArrangement = Arrangement.spacedBy(4.dp)
                                                 ) {
                                                     Text(
-                                                        text = "AttendSmartly",
+                                                        text = "Bunk",
                                                         style = MaterialTheme.typography.titleLarge,
                                                         fontWeight = FontWeight.Bold
                                                     )
@@ -1598,7 +1701,7 @@ fun SettingsScreen(
                                                 modifier = Modifier
                                                     .fillMaxWidth()
                                                     .testTag("settings_check_update_btn"),
-                                                shape = RoundedCornerShape(12.dp),
+                                                shape = RoundedCornerShape(20.dp),
                                                 contentPadding = PaddingValues(vertical = 12.dp, horizontal = 16.dp)
                                             ) {
                                                 if (isCheckingUpdate) {
@@ -1622,7 +1725,7 @@ fun SettingsScreen(
                                                     try { context.startActivity(intent) } catch (_: Exception) {}
                                                 },
                                                 modifier = Modifier.fillMaxWidth(),
-                                                shape = RoundedCornerShape(12.dp),
+                                                shape = RoundedCornerShape(20.dp),
                                                 contentPadding = PaddingValues(vertical = 12.dp, horizontal = 16.dp)
                                             ) {
                                                 Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null, modifier = Modifier.size(18.dp))
@@ -1646,7 +1749,7 @@ fun SettingsScreen(
                                                     try { context.startActivity(intent) } catch (_: Exception) {}
                                                 },
                                                 modifier = Modifier.weight(1f).testTag("settings_github_btn"),
-                                                shape = RoundedCornerShape(12.dp),
+                                                shape = RoundedCornerShape(20.dp),
                                                 contentPadding = PaddingValues(vertical = 10.dp, horizontal = 8.dp)
                                             ) {
                                                 Icon(painter = painterResource(R.drawable.ic_github), contentDescription = "GitHub", modifier = Modifier.size(18.dp))
@@ -1660,7 +1763,7 @@ fun SettingsScreen(
                                                     try { context.startActivity(intent) } catch (_: Exception) {}
                                                 },
                                                 modifier = Modifier.weight(1f).testTag("settings_linkedin_btn"),
-                                                shape = RoundedCornerShape(12.dp),
+                                                shape = RoundedCornerShape(20.dp),
                                                 contentPadding = PaddingValues(vertical = 10.dp, horizontal = 8.dp)
                                             ) {
                                                 Icon(painter = painterResource(R.drawable.ic_linkedin), contentDescription = "LinkedIn", modifier = Modifier.size(18.dp))
@@ -1679,7 +1782,7 @@ fun SettingsScreen(
                                                     try { context.startActivity(intent) } catch (_: Exception) {}
                                                 },
                                                 modifier = Modifier.weight(1f).testTag("settings_instagram_btn"),
-                                                shape = RoundedCornerShape(12.dp),
+                                                shape = RoundedCornerShape(20.dp),
                                                 contentPadding = PaddingValues(vertical = 10.dp, horizontal = 8.dp)
                                             ) {
                                                 Icon(painter = painterResource(R.drawable.ic_instagram), contentDescription = "Instagram", modifier = Modifier.size(18.dp))
@@ -1693,7 +1796,7 @@ fun SettingsScreen(
                                                     try { context.startActivity(intent) } catch (_: Exception) {}
                                                 },
                                                 modifier = Modifier.weight(1f).testTag("settings_email_btn"),
-                                                shape = RoundedCornerShape(12.dp),
+                                                shape = RoundedCornerShape(20.dp),
                                                 contentPadding = PaddingValues(vertical = 10.dp, horizontal = 8.dp)
                                             ) {
                                                 Icon(imageVector = Icons.Default.Email, contentDescription = "Email", modifier = Modifier.size(18.dp))
@@ -1718,7 +1821,7 @@ fun SettingsScreen(
                                                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/agupta07505/AttendSmartly/issues/new?template=app_review.md"))
                                                     try { context.startActivity(intent) } catch (_: Exception) {}
                                                 },
-                                                shape = RoundedCornerShape(10.dp),
+                                                shape = RoundedCornerShape(24.dp),
                                                 contentPadding = PaddingValues(vertical = 8.dp, horizontal = 12.dp)
                                             ) {
                                                 Icon(Icons.Default.Star, contentDescription = "Review", modifier = Modifier.size(16.dp))
@@ -1731,7 +1834,7 @@ fun SettingsScreen(
                                                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/agupta07505/AttendSmartly/issues/new?template=bug_report.md"))
                                                     try { context.startActivity(intent) } catch (_: Exception) {}
                                                 },
-                                                shape = RoundedCornerShape(10.dp),
+                                                shape = RoundedCornerShape(24.dp),
                                                 contentPadding = PaddingValues(vertical = 8.dp, horizontal = 12.dp)
                                             ) {
                                                 Icon(Icons.Default.BugReport, contentDescription = "Report", modifier = Modifier.size(16.dp))
@@ -1744,7 +1847,7 @@ fun SettingsScreen(
                                                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/agupta07505/AttendSmartly/issues/new?template=feature_request.md"))
                                                     try { context.startActivity(intent) } catch (_: Exception) {}
                                                 },
-                                                shape = RoundedCornerShape(10.dp),
+                                                shape = RoundedCornerShape(24.dp),
                                                 contentPadding = PaddingValues(vertical = 8.dp, horizontal = 12.dp)
                                             ) {
                                                 Icon(Icons.Default.Lightbulb, contentDescription = "Feature", modifier = Modifier.size(16.dp))
@@ -1757,7 +1860,7 @@ fun SettingsScreen(
                                                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/agupta07505/AttendSmartly/blob/main/LICENSE"))
                                                     try { context.startActivity(intent) } catch (_: Exception) {}
                                                 },
-                                                shape = RoundedCornerShape(10.dp),
+                                                shape = RoundedCornerShape(24.dp),
                                                 contentPadding = PaddingValues(vertical = 8.dp, horizontal = 12.dp)
                                             ) {
                                                 Icon(Icons.Default.Info, contentDescription = "License", modifier = Modifier.size(16.dp))
@@ -1770,7 +1873,7 @@ fun SettingsScreen(
                                                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/agupta07505/AttendSmartly/blob/main/PRIVACY.md"))
                                                     try { context.startActivity(intent) } catch (_: Exception) {}
                                                 },
-                                                shape = RoundedCornerShape(10.dp),
+                                                shape = RoundedCornerShape(24.dp),
                                                 contentPadding = PaddingValues(vertical = 8.dp, horizontal = 12.dp)
                                             ) {
                                                 Icon(Icons.Default.Security, contentDescription = "Privacy", modifier = Modifier.size(16.dp))
@@ -1783,7 +1886,7 @@ fun SettingsScreen(
                                                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/agupta07505/AttendSmartly/blob/main/TERMS.md"))
                                                     try { context.startActivity(intent) } catch (_: Exception) {}
                                                 },
-                                                shape = RoundedCornerShape(10.dp),
+                                                shape = RoundedCornerShape(24.dp),
                                                 contentPadding = PaddingValues(vertical = 8.dp, horizontal = 12.dp)
                                             ) {
                                                 Icon(Icons.Default.Description, contentDescription = "Terms", modifier = Modifier.size(16.dp))
@@ -1887,7 +1990,7 @@ fun SettingsScreen(
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Surface(
-                        shape = RoundedCornerShape(8.dp),
+                        shape = RoundedCornerShape(24.dp),
                         color = MaterialTheme.colorScheme.primaryContainer
                     ) {
                         Text(
@@ -1902,7 +2005,7 @@ fun SettingsScreen(
                     if (info.body.isNotBlank()) {
                         Text("Release Notes & Changelog:", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
                         Surface(
-                            shape = RoundedCornerShape(8.dp),
+                            shape = RoundedCornerShape(24.dp),
                             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                             modifier = Modifier.fillMaxWidth()
                         ) {
@@ -2055,10 +2158,10 @@ private fun SettingsSectionCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
+            .clip(RoundedCornerShape(28.dp))
             .clickable(onClick = onClick)
             .testTag("settings_section_${section.name.lowercase()}"),
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
@@ -2072,7 +2175,7 @@ private fun SettingsSectionCard(
             horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Surface(
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(20.dp),
                 color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
                 modifier = Modifier.size(44.dp)
             ) {

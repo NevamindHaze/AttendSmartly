@@ -150,6 +150,14 @@ class HomeViewModel(
         return true
     }
 
+    fun updateProfileName(name: String) {
+        viewModelScope.launch { preferencesRepository.updateProfileName(name) }
+    }
+
+    fun updateProfilePhotoUri(uri: String) {
+        viewModelScope.launch { preferencesRepository.updateProfilePhotoUri(uri) }
+    }
+
     fun selectDate(dateIso: String) {
         _selectedDateIso.value = dateIso
     }

@@ -1,4 +1,4 @@
-﻿/*
+/*
  * AttendSmartly (2026)
  * © Animesh Gupta — github.com/agupta07505
  * Licensed under the GNU GPL v3 License
@@ -46,7 +46,7 @@ fun UnitBadgeChip(
     Row(
         modifier = modifier
             .testTag("unit_chip_${unitIndex}")
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(24.dp))
             .background(bgColor)
             .clickable { onClick() }
             .padding(horizontal = 10.dp, vertical = 6.dp),

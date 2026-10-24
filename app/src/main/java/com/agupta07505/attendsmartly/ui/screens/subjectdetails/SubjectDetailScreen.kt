@@ -56,6 +56,7 @@ fun SubjectDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
                 title = { Text(subject?.name ?: "Subject Details", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
@@ -97,7 +98,7 @@ fun SubjectDetailScreen(
                 item {
                     Card(
                         modifier = Modifier.fillMaxWidth().testTag("subject_detail_stats_card"),
-                        shape = RoundedCornerShape(20.dp),
+                        shape = RoundedCornerShape(24.dp),
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
                         )
@@ -149,7 +150,7 @@ fun SubjectDetailScreen(
                             }
 
                             Surface(
-                                shape = RoundedCornerShape(12.dp),
+                                shape = RoundedCornerShape(20.dp),
                                 color = if (summary.percentage >= sub.targetPercentage) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
@@ -169,7 +170,7 @@ fun SubjectDetailScreen(
                 item {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp)
+                        shape = RoundedCornerShape(20.dp)
                     ) {
                         Column(
                             modifier = Modifier.padding(16.dp),
@@ -192,7 +193,7 @@ fun SubjectDetailScreen(
                 item {
                     ElevatedCard(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp)
+                        shape = RoundedCornerShape(20.dp)
                     ) {
                         Row(
                             modifier = Modifier
@@ -215,7 +216,7 @@ fun SubjectDetailScreen(
                             }
                             Button(
                                 onClick = { showMarkPastDialog = true },
-                                shape = RoundedCornerShape(10.dp)
+                                shape = RoundedCornerShape(24.dp)
                             ) {
                                 Icon(Icons.Default.EventAvailable, contentDescription = null, modifier = Modifier.size(16.dp))
                                 Spacer(modifier = Modifier.width(4.dp))
@@ -250,7 +251,7 @@ fun SubjectDetailScreen(
 
                         Card(
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(20.dp)
                         ) {
                             Row(
                                 modifier = Modifier

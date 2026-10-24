@@ -7,7 +7,6 @@
 
 package com.agupta07505.attendsmartly.ui.components
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -34,6 +33,7 @@ import com.agupta07505.attendsmartly.data.local.entity.SubjectEntity
 import com.agupta07505.attendsmartly.data.local.entity.TimetableEntryEntity
 import com.agupta07505.attendsmartly.domain.model.AttendanceStatus
 import com.agupta07505.attendsmartly.util.DateUtils
+import com.agupta07505.attendsmartly.ui.theme.pastelTint
 
 @Composable
 fun ClassCard(
@@ -83,15 +83,11 @@ fun ClassCard(
         modifier = modifier
             .fillMaxWidth()
             .testTag("class_card_${timetableEntry.id}"),
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(26.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isRescheduledAway) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f) else MaterialTheme.colorScheme.surface
+            containerColor = if (isRescheduledAway) MaterialTheme.colorScheme.surfaceVariant else pastelTint(subjectColor, MaterialTheme.colorScheme.surface)
         ),
-        border = BorderStroke(
-            1.dp,
-            if (isRescheduledIncoming) MaterialTheme.colorScheme.tertiary.copy(alpha = 0.5f)
-            else MaterialTheme.colorScheme.outline
-        )
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
             modifier = Modifier.padding(18.dp),
@@ -106,7 +102,7 @@ fun ClassCard(
                 Box(
                     modifier = Modifier
                         .size(48.dp)
-                        .clip(RoundedCornerShape(16.dp))
+                        .clip(RoundedCornerShape(20.dp))
                         .background(subjectColor.copy(alpha = 0.15f)),
                     contentAlignment = Alignment.Center
                 ) {
@@ -141,7 +137,7 @@ fun ClassCard(
 
                         if (isAutoMarked) {
                             Surface(
-                                shape = RoundedCornerShape(6.dp),
+                                shape = RoundedCornerShape(12.dp),
                                 color = MaterialTheme.colorScheme.primaryContainer
                             ) {
                                 Row(
@@ -166,7 +162,7 @@ fun ClassCard(
                             }
                         } else if (isRescheduledIncoming) {
                             Surface(
-                                shape = RoundedCornerShape(6.dp),
+                                shape = RoundedCornerShape(12.dp),
                                 color = MaterialTheme.colorScheme.tertiaryContainer
                             ) {
                                 Text(
@@ -180,7 +176,7 @@ fun ClassCard(
                             }
                         } else if (isExtraClass) {
                             Surface(
-                                shape = RoundedCornerShape(6.dp),
+                                shape = RoundedCornerShape(12.dp),
                                 color = MaterialTheme.colorScheme.secondaryContainer
                             ) {
                                 Text(
@@ -195,7 +191,7 @@ fun ClassCard(
                         } else if (hasLocation) {
                             val radius = timetableEntry.locationRadiusMeters.takeIf { it > 0 } ?: subject.locationRadiusMeters
                             Surface(
-                                shape = RoundedCornerShape(6.dp),
+                                shape = RoundedCornerShape(12.dp),
                                 color = MaterialTheme.colorScheme.surfaceVariant
                             ) {
                                 Row(
@@ -229,7 +225,7 @@ fun ClassCard(
 
                 // Type Pill Badge
                 Surface(
-                    shape = RoundedCornerShape(10.dp),
+                    shape = RoundedCornerShape(16.dp),
                     color = MaterialTheme.colorScheme.secondaryContainer
                 ) {
                     Text(
@@ -267,7 +263,7 @@ fun ClassCard(
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.4f)
                     ),
-                    shape = RoundedCornerShape(14.dp)
+                    shape = RoundedCornerShape(16.dp)
                 ) {
                     Row(
                         modifier = Modifier
@@ -321,7 +317,7 @@ fun ClassCard(
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
                         ),
-                        shape = RoundedCornerShape(10.dp)
+                        shape = RoundedCornerShape(16.dp)
                     ) {
                         Row(
                             modifier = Modifier
@@ -444,7 +440,7 @@ fun ClassCard(
                             containerColor = if (presentCount == expectedUnits) com.agupta07505.attendsmartly.ui.theme.StatusPresent else MaterialTheme.colorScheme.surfaceVariant,
                             contentColor = if (presentCount == expectedUnits) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
                         ),
-                        shape = RoundedCornerShape(10.dp),
+                        shape = RoundedCornerShape(16.dp),
                         contentPadding = PaddingValues(horizontal = 2.dp)
                     ) {
                         Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(14.dp))
@@ -469,7 +465,7 @@ fun ClassCard(
                             containerColor = if (absentCount == expectedUnits) com.agupta07505.attendsmartly.ui.theme.StatusAbsent else MaterialTheme.colorScheme.surfaceVariant,
                             contentColor = if (absentCount == expectedUnits) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
                         ),
-                        shape = RoundedCornerShape(10.dp),
+                        shape = RoundedCornerShape(16.dp),
                         contentPadding = PaddingValues(horizontal = 2.dp)
                     ) {
                         Icon(Icons.Default.Cancel, contentDescription = null, modifier = Modifier.size(14.dp))
@@ -494,7 +490,7 @@ fun ClassCard(
                             containerColor = if (bunkedCount == expectedUnits) com.agupta07505.attendsmartly.ui.theme.StatusAbsent.copy(alpha = 0.8f) else MaterialTheme.colorScheme.surfaceVariant,
                             contentColor = if (bunkedCount == expectedUnits) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
                         ),
-                        shape = RoundedCornerShape(10.dp),
+                        shape = RoundedCornerShape(16.dp),
                         contentPadding = PaddingValues(horizontal = 2.dp)
                     ) {
                         Icon(Icons.AutoMirrored.Filled.DirectionsRun, contentDescription = null, modifier = Modifier.size(14.dp))
@@ -519,7 +515,7 @@ fun ClassCard(
                             containerColor = if (cancelledCount == expectedUnits) com.agupta07505.attendsmartly.ui.theme.StatusCancelled else MaterialTheme.colorScheme.surfaceVariant,
                             contentColor = if (cancelledCount == expectedUnits) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
                         ),
-                        shape = RoundedCornerShape(10.dp),
+                        shape = RoundedCornerShape(16.dp),
                         contentPadding = PaddingValues(horizontal = 2.dp)
                     ) {
                         Icon(Icons.Default.Block, contentDescription = null, modifier = Modifier.size(14.dp))

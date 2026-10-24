@@ -307,7 +307,7 @@ fun AddEditTimetableDialog(
                             colors = CardDefaults.cardColors(
                                 containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.45f)
                             ),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(20.dp)
                         ) {
                             Column(
                                 modifier = Modifier.padding(12.dp),
@@ -398,7 +398,7 @@ fun AddEditTimetableDialog(
                         )
 
                         Surface(
-                            shape = RoundedCornerShape(16.dp),
+                            shape = RoundedCornerShape(20.dp),
                             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
                             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)),
                             modifier = Modifier.fillMaxWidth()
@@ -481,7 +481,7 @@ fun AddEditTimetableDialog(
                                             )
                                         }
                                     },
-                                    shape = RoundedCornerShape(12.dp),
+                                    shape = RoundedCornerShape(20.dp),
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
                                     if (isFetchingLocation) {
@@ -541,7 +541,7 @@ fun AddEditTimetableDialog(
                             onSave(entry, preservePastHistory, effectiveStartDate)
                         },
                         enabled = selectedSubject != null && startTime.isNotBlank() && endTime.isNotBlank(),
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(20.dp),
                         modifier = Modifier.testTag("save_timetable_btn")
                     ) {
                         Text("Save")

@@ -49,6 +49,7 @@ fun AttendanceHistoryScreen(
     Scaffold(
         topBar = {
             TopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
                 title = { Text("Attendance History", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
@@ -157,7 +158,7 @@ fun AttendanceHistoryScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .testTag("history_record_${record.session.id}"),
-                            shape = RoundedCornerShape(16.dp)
+                            shape = RoundedCornerShape(20.dp)
                         ) {
                             Column(
                                 modifier = Modifier.padding(16.dp),

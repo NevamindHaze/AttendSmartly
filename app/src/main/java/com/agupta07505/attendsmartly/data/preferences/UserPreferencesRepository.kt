@@ -34,9 +34,9 @@ data class UserPreferences(
     val firstDayOfWeek: Int = 1, // 1 = Monday
     val timeFormat24Hr: Boolean = false,
     val themeMode: String = "SYSTEM", // "SYSTEM", "LIGHT", "DARK"
-    val dynamicColors: Boolean = true,
-    val themeColorStyle: String = "DYNAMIC", // "DYNAMIC", "DEFAULT", "CUSTOM"
-    val customThemeColor: String = "#6750A4",
+    val dynamicColors: Boolean = false,
+    val themeColorStyle: String = "DEFAULT", // "DYNAMIC", "DEFAULT", "CUSTOM"
+    val customThemeColor: String = "#E76F91",
     val onboardingCompleted: Boolean = false,
     val confirmMarkingAbsent: Boolean = false,
     val notificationSound: Boolean = true,
@@ -44,7 +44,9 @@ data class UserPreferences(
     val geminiApiKey: String = "",
     val autoAttendanceEnabled: Boolean = true,
     val autoAttendanceDwellMinutes: Int = 5,
-    val autoAttendanceRadiusMeters: Int = 50
+    val autoAttendanceRadiusMeters: Int = 50,
+    val profileName: String = "",
+    val profilePhotoUri: String = ""
 )
 
 class UserPreferencesRepository(private val context: Context) {
@@ -70,6 +72,8 @@ class UserPreferencesRepository(private val context: Context) {
         val AUTO_ATTENDANCE_ENABLED = booleanPreferencesKey("auto_attendance_enabled")
         val AUTO_ATTENDANCE_DWELL_MINUTES = intPreferencesKey("auto_attendance_dwell_minutes")
         val AUTO_ATTENDANCE_RADIUS_METERS = intPreferencesKey("auto_attendance_radius_meters")
+        val PROFILE_NAME = stringPreferencesKey("profile_name")
+        val PROFILE_PHOTO_URI = stringPreferencesKey("profile_photo_uri")
     }
 
     val userPreferencesFlow: Flow<UserPreferences> = context.dataStore.data
@@ -87,9 +91,9 @@ class UserPreferencesRepository(private val context: Context) {
                 firstDayOfWeek = preferences[PreferencesKeys.FIRST_DAY_OF_WEEK] ?: 1,
                 timeFormat24Hr = preferences[PreferencesKeys.TIME_FORMAT_24HR] ?: false,
                 themeMode = preferences[PreferencesKeys.THEME_MODE] ?: "SYSTEM",
-                dynamicColors = preferences[PreferencesKeys.DYNAMIC_COLORS] ?: true,
-                themeColorStyle = preferences[PreferencesKeys.THEME_COLOR_STYLE] ?: if (preferences[PreferencesKeys.DYNAMIC_COLORS] == false) "DEFAULT" else "DYNAMIC",
-                customThemeColor = preferences[PreferencesKeys.CUSTOM_THEME_COLOR] ?: "#6750A4",
+                dynamicColors = preferences[PreferencesKeys.DYNAMIC_COLORS] ?: false,
+                themeColorStyle = preferences[PreferencesKeys.THEME_COLOR_STYLE] ?: if (preferences[PreferencesKeys.DYNAMIC_COLORS] == true) "DYNAMIC" else "DEFAULT",
+                customThemeColor = preferences[PreferencesKeys.CUSTOM_THEME_COLOR] ?: "#E76F91",
                 onboardingCompleted = preferences[PreferencesKeys.ONBOARDING_COMPLETED] ?: false,
                 confirmMarkingAbsent = preferences[PreferencesKeys.CONFIRM_MARKING_ABSENT] ?: false,
                 notificationSound = preferences[PreferencesKeys.NOTIFICATION_SOUND] ?: true,
@@ -97,7 +101,9 @@ class UserPreferencesRepository(private val context: Context) {
                 geminiApiKey = preferences[PreferencesKeys.GEMINI_API_KEY] ?: "",
                 autoAttendanceEnabled = preferences[PreferencesKeys.AUTO_ATTENDANCE_ENABLED] ?: true,
                 autoAttendanceDwellMinutes = preferences[PreferencesKeys.AUTO_ATTENDANCE_DWELL_MINUTES] ?: 5,
-                autoAttendanceRadiusMeters = preferences[PreferencesKeys.AUTO_ATTENDANCE_RADIUS_METERS] ?: 50
+                autoAttendanceRadiusMeters = preferences[PreferencesKeys.AUTO_ATTENDANCE_RADIUS_METERS] ?: 50,
+                profileName = preferences[PreferencesKeys.PROFILE_NAME] ?: "",
+                profilePhotoUri = preferences[PreferencesKeys.PROFILE_PHOTO_URI] ?: ""
             )
         }
 
@@ -207,6 +213,18 @@ class UserPreferencesRepository(private val context: Context) {
     suspend fun updateAutoAttendanceRadiusMeters(radius: Int) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.AUTO_ATTENDANCE_RADIUS_METERS] = radius
+        }
+    }
+
+    suspend fun updateProfileName(name: String) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.PROFILE_NAME] = name.trim().take(32)
+        }
+    }
+
+    suspend fun updateProfilePhotoUri(uri: String) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.PROFILE_PHOTO_URI] = uri
         }
     }
 

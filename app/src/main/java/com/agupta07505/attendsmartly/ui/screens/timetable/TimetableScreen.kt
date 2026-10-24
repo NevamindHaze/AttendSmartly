@@ -90,6 +90,7 @@ fun TimetableScreen(
     Scaffold(
         topBar = {
             TopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
                 title = { Text("Weekly Timetable", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(
@@ -296,7 +297,7 @@ fun TimetableScreen(
                             colors = CardDefaults.cardColors(
                                 containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
                             ),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(20.dp)
                         ) {
                             Row(
                                 modifier = Modifier
@@ -345,7 +346,7 @@ fun TimetableScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .testTag("timetable_item_${item.entry.id}"),
-                            shape = RoundedCornerShape(16.dp)
+                            shape = RoundedCornerShape(20.dp)
                         ) {
                             Row(
                                 modifier = Modifier

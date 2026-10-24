@@ -1,4 +1,4 @@
-﻿/*
+/*
  * AttendSmartly (2026)
  * © Animesh Gupta — github.com/agupta07505
  * Licensed under the GNU GPL v3 License
@@ -15,7 +15,7 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector?
     object Onboarding : Screen("onboarding", "Onboarding")
     object Setup : Screen("setup", "Setup")
     object Home : Screen("home", "Home", Icons.Default.Home)
-    object Timetable : Screen("timetable", "Timetable", Icons.Default.CalendarToday)
+    object Timetable : Screen("timetable", "Timetable", Icons.Default.CalendarMonth)
     object Subjects : Screen("subjects", "Subjects", Icons.Default.Book)
     object Analytics : Screen("analytics", "Analytics", Icons.Default.BarChart)
     object History : Screen("history", "History", Icons.Default.History)

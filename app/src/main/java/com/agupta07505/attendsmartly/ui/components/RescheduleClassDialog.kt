@@ -168,7 +168,7 @@ fun RescheduleClassDialog(
                                 colors = CardDefaults.cardColors(
                                     containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                                 ),
-                                shape = RoundedCornerShape(12.dp)
+                                shape = RoundedCornerShape(20.dp)
                             ) {
                                 Column(
                                     modifier = Modifier
@@ -264,7 +264,7 @@ fun RescheduleClassDialog(
                             colors = CardDefaults.cardColors(
                                 containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                             ),
-                            shape = RoundedCornerShape(14.dp)
+                            shape = RoundedCornerShape(24.dp)
                         ) {
                             Row(
                                 modifier = Modifier
@@ -395,7 +395,7 @@ fun RescheduleClassDialog(
                             onDismiss()
                         },
                         enabled = selectedItem != null && newStartTime.isNotBlank() && newEndTime.isNotBlank() && targetDateIso.isNotBlank(),
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(20.dp),
                         modifier = Modifier.testTag("reschedule_confirm_btn")
                     ) {
                         Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))

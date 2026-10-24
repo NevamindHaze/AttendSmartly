@@ -1,4 +1,4 @@
-# AttendSmartly - College Attendance Tracker & Bunk Calculator
+# Bunk - College Attendance Tracker & Bunk Calculator
 
 <div align="center">
 
@@ -36,9 +36,9 @@
 
 ## 💡 Overview
 
-**AttendSmartly** is a clean, modern, student-focused Android attendance-tracking application built natively with **Kotlin**, **Jetpack Compose**, **Material Design 3**, and **Room Database**.
+**Bunk** (formerly AttendSmartly) is a clean, modern, student-focused Android attendance-tracking application built natively with **Kotlin**, **Jetpack Compose**, **Material Design 3**, and **Room Database**.
 
-College academic rules often demand a mandatory minimum attendance threshold (e.g. 75% or 80%) with complex multi-hour class structures where practical labs count differently than single lectures. AttendSmartly takes the guesswork out of attendance tracking by calculating your exact **Safe Bunks** and **Recovery Classes** in real time.
+College academic rules often demand a mandatory minimum attendance threshold (e.g. 75% or 80%) with complex multi-hour class structures where practical labs count differently than single lectures. Bunk takes the guesswork out of attendance tracking by calculating your exact **Safe Bunks** and **Recovery Classes** in real time.
 
 ---
 
@@ -211,7 +211,7 @@ Read our full policies:
 
 ## 📄 Author & License
 
-Designed and developed with ❤️ by **Animesh Gupta** ([@agupta07505](https://github.com/agupta07505)).
+Designed and developed with ❤️ by **NevamindHaze** ([@NevamindHaze](https://github.com/NevamindHaze)).
 
 ```text
 AttendSmartly (2026)

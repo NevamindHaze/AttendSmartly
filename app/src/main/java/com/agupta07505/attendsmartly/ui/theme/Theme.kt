@@ -7,13 +7,17 @@
 
 package com.agupta07505.attendsmartly.ui.theme
 
+import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
 import kotlin.math.abs
 
 private val LightColorScheme = lightColorScheme(
@@ -30,6 +34,7 @@ private val LightColorScheme = lightColorScheme(
     tertiaryContainer = TertiaryContainerLight,
     onTertiaryContainer = OnTertiaryContainerLight,
     surface = SurfaceLight,
+    background = Color(0xFFF6EAF5),
     onSurface = OnSurfaceLight,
     surfaceVariant = SurfaceVariantLight,
     onSurfaceVariant = OnSurfaceVariantLight,
@@ -51,6 +56,7 @@ private val DarkColorScheme = darkColorScheme(
     tertiaryContainer = TertiaryContainerDark,
     onTertiaryContainer = OnTertiaryContainerDark,
     surface = SurfaceDark,
+    background = SurfaceDark,
     onSurface = OnSurfaceDark,
     surfaceVariant = SurfaceVariantDark,
     onSurfaceVariant = OnSurfaceVariantDark,
@@ -204,6 +210,7 @@ fun AttendSmartlyTheme(
     }
 
     val context = LocalContext.current
+    val view = LocalView.current
     val parsedCustomColor = remember(customColorHex) { parseColorHex(customColorHex) }
 
     val colorScheme = when {
@@ -223,6 +230,14 @@ fun AttendSmartlyTheme(
         else -> LightColorScheme
     }
 
+    SideEffect {
+        val window = (view.context as? Activity)?.window
+        if (window != null) {
+            val controller = WindowCompat.getInsetsController(window, view)
+            controller.isAppearanceLightStatusBars = !darkTheme
+            controller.isAppearanceLightNavigationBars = !darkTheme
+        }
+    }
     MaterialTheme(
         colorScheme = colorScheme,
         shapes = AppShapes,

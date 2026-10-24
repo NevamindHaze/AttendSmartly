@@ -101,7 +101,7 @@ fun SetupScreen(
             // Card 1: Attendance Rules & Semester Dates
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(20.dp)
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
@@ -146,7 +146,7 @@ fun SetupScreen(
             // Card 2: Gemini API Key & AI Settings
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f)
                 )
@@ -205,7 +205,7 @@ fun SetupScreen(
                             try { context.startActivity(intent) } catch (_: Exception) {}
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(10.dp)
+                        shape = RoundedCornerShape(24.dp)
                     ) {
                         Icon(Icons.Default.OpenInNew, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(8.dp))
@@ -217,7 +217,7 @@ fun SetupScreen(
             // Card 3: Setup Method Selection (Upload Timetable, Demo Data, or Manual Subject)
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(20.dp)
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
@@ -357,7 +357,7 @@ fun SetupScreen(
                     .fillMaxWidth()
                     .height(52.dp)
                     .testTag("save_setup_btn"),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(20.dp)
             ) {
                 Icon(
                     imageVector = when (selectedSetupMethod) {
