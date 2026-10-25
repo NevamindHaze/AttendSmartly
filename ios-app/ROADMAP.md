@@ -18,7 +18,7 @@ A living checklist for the native iOS app. This roadmap tracks iOS work separate
 ## P0 — Correctness and release foundation
 
 - [x] Align active timetable and date-window filtering across Home and Timetable. The weekly view resolves the selected weekday to its date in the current week; both screens use inclusive start/end bounds. Current recurrence is one weekly weekday per entry, matching Android's day/date query; `repeatType` remains backup compatibility data. Implemented in [PR #3](https://github.com/NevamindHaze/AttendSmartly/pull/3); simulator and device builds passed.
-- [ ] Add an iOS test target for attendance calculations, date/recurrence boundaries, and Android backup import/export. Include boundary cases and a representative backup fixture.
+- [x] Add an iOS test target for attendance math, schedule date boundaries, weekday selection, and Android backup import/export with a representative fixture. CI passed on [PR #3](https://github.com/NevamindHaze/AttendSmartly/pull/3).
 - [ ] Replace the SwiftData startup `fatalError` with a recoverable error path and a safe, documented recovery option.
 - [ ] Complete a real-device smoke pass: create a subject and schedule, mark multiple units, relaunch, edit history, and import/export a backup without data loss.
 - [ ] Choose a signing and distribution route. The current CI device artifact is unsigned; document the steps for installing a development build or publishing through TestFlight.
