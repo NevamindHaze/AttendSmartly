@@ -36,6 +36,31 @@ enum DateUtils {
         isoFormatter.string(from: date)
     }
 
+    static func date(fromISO iso: String) -> Date? {
+        isoFormatter.date(from: iso)
+    }
+
+    /// "2026-10-26" -> "Mon, 26 Oct 2026"
+    static func prettyDate(_ iso: String) -> String {
+        guard let d = isoFormatter.date(from: iso) else { return iso }
+        let f = DateFormatter()
+        f.dateFormat = "EEE, d MMM yyyy"
+        return f.string(from: d)
+    }
+
+    /// "13:30" -> a Date today at 13:30 (for DatePicker)
+    static func time(from hhmm: String) -> Date {
+        let parts = hhmm.split(separator: ":")
+        let h = Int(parts.first ?? "9") ?? 9
+        let m = parts.count > 1 ? (Int(parts[1]) ?? 0) : 0
+        return Calendar.current.date(bySettingHour: h, minute: m, second: 0, of: Date()) ?? Date()
+    }
+
+    static func hhmm(_ date: Date) -> String {
+        let c = Calendar.current.dateComponents([.hour, .minute], from: date)
+        return String(format: "%02d:%02d", c.hour ?? 0, c.minute ?? 0)
+    }
+
     /// 1 = Monday ... 7 = Sunday, matching the Android app.
     static func dayOfWeek(_ date: Date) -> Int {
         let w = Calendar.current.component(.weekday, from: date) // Sunday = 1
@@ -69,10 +94,10 @@ struct ContentView: View {
             SubjectsView()
                 .tabItem { Label("Subjects", systemImage: "book.closed") }
 
-            placeholder("Timetable", symbol: "calendar", message: "Timetable editing is coming in the next update. Import a backup from Settings to see your classes on Home.")
+            TimetableView()
                 .tabItem { Label("Timetable", systemImage: "calendar") }
 
-            placeholder("History", symbol: "clock.arrow.circlepath", message: "Attendance history is coming in the next update.")
+            HistoryView()
                 .tabItem { Label("History", systemImage: "clock.arrow.circlepath") }
 
             placeholder("Analytics", symbol: "chart.bar.xaxis", message: "Analytics are coming in a later update.")
