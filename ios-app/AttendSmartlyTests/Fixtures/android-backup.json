@@ -1,0 +1,70 @@
+{
+  "format": "AttendSmartly",
+  "version": 1,
+  "exportedAt": 1792968959000,
+  "subjects": [
+    {
+      "id": 1,
+      "name": "Mathematics",
+      "code": "MATH101",
+      "type": "Lecture",
+      "room": "B-12",
+      "targetPercentage": 75,
+      "defaultAttendanceUnits": 2,
+      "defaultReminderMinutes": 10,
+      "createdAt": 1792968959000
+    }
+  ],
+  "timetableEntries": [
+    {
+      "id": 10,
+      "subjectId": 1,
+      "dayOfWeek": 1,
+      "startTime": "09:00",
+      "endTime": "10:00",
+      "startDate": "2026-01-12",
+      "endDate": "2026-12-21",
+      "repeatType": "WEEKLY",
+      "attendanceUnitCount": 2,
+      "isActive": true,
+      "reminderMinutes": 10
+    }
+  ],
+  "sessions": [
+    {
+      "id": 20,
+      "subjectId": 1,
+      "timetableEntryId": 10,
+      "sessionDate": "2026-10-26",
+      "startTime": "09:00",
+      "endTime": "10:00",
+      "expectedUnitCount": 2,
+      "isRescheduled": false,
+      "createdAt": 1792968959000
+    }
+  ],
+  "units": [
+    {
+      "id": 30,
+      "sessionId": 20,
+      "unitIndex": 0,
+      "status": "PRESENT",
+      "markedAt": 1792968959000
+    },
+    {
+      "id": 31,
+      "sessionId": 20,
+      "unitIndex": 1,
+      "status": "ABSENT",
+      "markedAt": 1792968959000
+    }
+  ],
+  "holidays": [
+    {
+      "id": 40,
+      "date": "2026-12-25",
+      "title": "Winter holiday",
+      "notes": "Campus closed"
+    }
+  ]
+}

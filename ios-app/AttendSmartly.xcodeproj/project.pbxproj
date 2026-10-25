@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		B20000000000000000000001 /* AttendSmartlyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000011 /* AttendSmartlyTests.swift */; };
+		B20000000000000000000002 /* android-backup.json in Resources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000013 /* android-backup.json */; };
 		A10000000000000000000001 /* AttendSmartlyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000011 /* AttendSmartlyApp.swift */; };
 		A10000000000000000000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000012 /* ContentView.swift */; };
 		A10000000000000000000003 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000014 /* Models.swift */; };
@@ -20,6 +22,9 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		B20000000000000000000011 /* AttendSmartlyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttendSmartlyTests.swift; sourceTree = "<group>"; };
+		B20000000000000000000012 /* AttendSmartlyTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AttendSmartlyTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		B20000000000000000000013 /* android-backup.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = android-backup.json; sourceTree = "<group>"; };
 		A10000000000000000000011 /* AttendSmartlyApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttendSmartlyApp.swift; sourceTree = "<group>"; };
 		A10000000000000000000012 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		A10000000000000000000014 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
@@ -36,6 +41,9 @@
 /* Begin PBXFrameworksBuildPhase section */
 		A10000000000000000000021 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (
 		); runOnlyForDeploymentPostprocessing = 0; };
+
+		B20000000000000000000021 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (
+		); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -44,6 +52,7 @@
 			children = (
 				A10000000000000000000032 /* AttendSmartly */,
 				A10000000000000000000033 /* Products */,
+				B20000000000000000000031 /* AttendSmartlyTests */,
 			);
 			sourceTree = "<group>";
 		};
@@ -70,6 +79,24 @@
 			sourceTree = "<group>";
 			children = (
 				A10000000000000000000015 /* AttendSmartly.app */,
+				B20000000000000000000012 /* AttendSmartlyTests.xctest */,
+			);
+		};
+		B20000000000000000000031 /* AttendSmartlyTests */ = {
+			isa = PBXGroup;
+			path = AttendSmartlyTests;
+			sourceTree = "<group>";
+			children = (
+				B20000000000000000000011 /* AttendSmartlyTests.swift */,
+				B20000000000000000000032 /* Fixtures */,
+			);
+		};
+		B20000000000000000000032 /* Fixtures */ = {
+			isa = PBXGroup;
+			path = Fixtures;
+			sourceTree = "<group>";
+			children = (
+				B20000000000000000000013 /* android-backup.json */,
 			);
 		};
 /* End PBXGroup section */
@@ -92,7 +119,44 @@
 			productReference = A10000000000000000000015 /* AttendSmartly.app */;
 			productType = "com.apple.product-type.application";
 		};
+
+		B20000000000000000000041 /* AttendSmartlyTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B20000000000000000000061 /* Build configuration list for PBXNativeTarget "AttendSmartlyTests" */;
+			buildPhases = (
+				B20000000000000000000022 /* Sources */,
+				B20000000000000000000021 /* Frameworks */,
+				B20000000000000000000023 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				B20000000000000000000071 /* PBXTargetDependency */,
+			);
+			name = AttendSmartlyTests;
+			productName = AttendSmartlyTests;
+			productReference = B20000000000000000000012 /* AttendSmartlyTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
+
+/* Begin PBXContainerItemProxy section */
+		B20000000000000000000081 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A10000000000000000000042 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A10000000000000000000041;
+			remoteInfo = AttendSmartly;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXTargetDependency section */
+		B20000000000000000000071 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A10000000000000000000041 /* AttendSmartly */;
+			targetProxy = B20000000000000000000081 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin PBXProject section */
 		A10000000000000000000042 /* Project object */ = {
@@ -104,6 +168,10 @@
 					A10000000000000000000041 = {
 						CreatedOnToolsVersion = 16.0;
 						LastSwiftMigration = 1600;
+					};
+					B20000000000000000000041 = {
+						CreatedOnToolsVersion = 16.0;
+						TestTargetID = A10000000000000000000041;
 					};
 				};
 			};
@@ -121,12 +189,16 @@
 			projectRoot = "";
 			targets = (
 				A10000000000000000000041 /* AttendSmartly */,
+				B20000000000000000000041 /* AttendSmartlyTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		A10000000000000000000052 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (
+		); runOnlyForDeploymentPostprocessing = 0; };
+		B20000000000000000000023 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (
+			B20000000000000000000002 /* android-backup.json in Resources */,
 		); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXResourcesBuildPhase section */
 
@@ -143,6 +215,9 @@
 			A10000000000000000000206 /* TimetableView.swift in Sources */,
 			A10000000000000000000207 /* HistoryView.swift in Sources */,
 		); runOnlyForDeploymentPostprocessing = 0; };
+		B20000000000000000000022 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (
+			B20000000000000000000001 /* AttendSmartlyTests.swift in Sources */,
+		); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
@@ -153,6 +228,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
+				ENABLE_TESTABILITY = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = AttendSmartly;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -188,6 +264,46 @@
 			};
 			name = Release;
 		};
+		B20000000000000000000062 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.agupta07505.attendsmartly.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AttendSmartly.app/AttendSmartly";
+			};
+			name = Debug;
+		};
+		B20000000000000000000063 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.agupta07505.attendsmartly.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AttendSmartly.app/AttendSmartly";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -205,6 +321,15 @@
 			buildConfigurations = (
 				A10000000000000000000071 /* Debug */,
 				A10000000000000000000072 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		B20000000000000000000061 /* Build configuration list for PBXNativeTarget "AttendSmartlyTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B20000000000000000000062 /* Debug */,
+				B20000000000000000000063 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
