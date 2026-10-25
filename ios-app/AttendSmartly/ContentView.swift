@@ -86,6 +86,23 @@ enum DateUtils {
 // MARK: - Root
 
 struct ContentView: View {
+    @Query private var entries: [TimetableEntry]
+    @AppStorage(PrefKey.remindersEnabled) private var remindersEnabled = false
+
+    /// Changes whenever anything that affects reminders changes.
+    private var reminderSignature: String {
+        var parts: [String] = []
+        for e in entries where e.isActive {
+            guard let subject = e.subject else { continue }
+            var key = e.id.uuidString
+            key += "|\(e.dayOfWeek)|\(e.startTime)|\(e.reminderMinutes)"
+            key += "|\(subject.name)|\(subject.isArchived)|\(e.roomOverride)"
+            parts.append(key)
+        }
+        parts.sort()
+        return "\(remindersEnabled)#" + parts.joined(separator: ";")
+    }
+
     var body: some View {
         TabView {
             HomeView()
@@ -104,6 +121,10 @@ struct ContentView: View {
                 .tabItem { Label("Analytics", systemImage: "chart.bar.xaxis") }
         }
         .tint(DashboardPalette.green)
+        .task(id: reminderSignature) { @MainActor in
+            let items = ReminderService.items(from: entries)
+            await ReminderService.reschedule(items: items, enabled: remindersEnabled)
+        }
     }
 
     private func placeholder(_ title: String, symbol: String, message: String) -> some View {

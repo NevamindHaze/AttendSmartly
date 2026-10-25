@@ -9,6 +9,11 @@ struct SettingsView: View {
     @Query private var subjects: [Subject]
     @Query private var sessions: [AttendanceSession]
 
+    @AppStorage(PrefKey.semesterEnabled) private var semesterEnabled = false
+    @AppStorage(PrefKey.semesterStart) private var semesterStart = ""
+    @AppStorage(PrefKey.semesterEnd) private var semesterEnd = ""
+    @AppStorage(PrefKey.remindersEnabled) private var remindersEnabled = false
+
     @State private var showImporter = false
     @State private var showExporter = false
     @State private var exportDocument = BackupDocument(data: Data())
@@ -22,6 +27,37 @@ struct SettingsView: View {
                 Section("Your data") {
                     LabeledContent("Subjects", value: "\(subjects.count)")
                     LabeledContent("Attendance sessions", value: "\(sessions.count)")
+                    NavigationLink {
+                        HolidaysView()
+                    } label: {
+                        Label("Holidays", systemImage: "party.popper")
+                    }
+                }
+
+                Section {
+                    Toggle("Class reminders", isOn: $remindersEnabled)
+                } header: {
+                    Text("Reminders")
+                } footer: {
+                    Text("A weekly notification before each timetable class, using that class's reminder time (10 minutes by default).")
+                }
+
+                Section {
+                    Toggle("Track by semester", isOn: $semesterEnabled)
+                    if semesterEnabled {
+                        Toggle("Start date", isOn: dateEnabled($semesterStart))
+                        if !semesterStart.isEmpty {
+                            DatePicker("From", selection: dateBinding($semesterStart), displayedComponents: .date)
+                        }
+                        Toggle("End date", isOn: dateEnabled($semesterEnd))
+                        if !semesterEnd.isEmpty {
+                            DatePicker("Until", selection: dateBinding($semesterEnd), displayedComponents: .date)
+                        }
+                    }
+                } header: {
+                    Text("Semester")
+                } footer: {
+                    Text("Only classes inside this date range count towards attendance on Home, Subjects and Analytics.")
                 }
 
                 Section {
@@ -54,6 +90,16 @@ struct SettingsView: View {
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
+                }
+            }
+            .onChange(of: remindersEnabled) { _, isOn in
+                guard isOn else { return }
+                Task { @MainActor in
+                    let granted = await ReminderService.requestAuthorization()
+                    if !granted {
+                        remindersEnabled = false
+                        message = "Notifications are turned off for AttendSmartly. Enable them in iOS Settings → Notifications, then try again."
+                    }
                 }
             }
             .fileImporter(isPresented: $showImporter, allowedContentTypes: [.json, .plainText]) { result in
@@ -95,6 +141,24 @@ struct SettingsView: View {
             }
         }
     }
+
+    // MARK: Semester date helpers (stored as yyyy-MM-dd strings; empty = not set)
+
+    private func dateEnabled(_ value: Binding<String>) -> Binding<Bool> {
+        Binding(
+            get: { !value.wrappedValue.isEmpty },
+            set: { on in value.wrappedValue = on ? DateUtils.isoString(Date()) : "" }
+        )
+    }
+
+    private func dateBinding(_ value: Binding<String>) -> Binding<Date> {
+        Binding(
+            get: { DateUtils.date(fromISO: value.wrappedValue) ?? Date() },
+            set: { value.wrappedValue = DateUtils.isoString($0) }
+        )
+    }
+
+    // MARK: Backup
 
     private func handlePicked(_ result: Result<URL, Error>) {
         switch result {

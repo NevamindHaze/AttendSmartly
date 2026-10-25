@@ -21,9 +21,15 @@ private struct TrendPoint: Identifiable {
 
 struct AnalyticsView: View {
     @Query private var subjects: [Subject]
-    @Query private var sessions: [AttendanceSession]
+    @Query private var allSessions: [AttendanceSession]
+
+    @AppStorage(PrefKey.semesterEnabled) private var semesterEnabled = false
+    @AppStorage(PrefKey.semesterStart) private var semesterStart = ""
+    @AppStorage(PrefKey.semesterEnd) private var semesterEnd = ""
 
     var body: some View {
+        let semester = SemesterRange(enabled: semesterEnabled, start: semesterStart, end: semesterEnd)
+        let sessions = allSessions.filter { semester.includes($0.sessionDate) }
         let active = subjects.filter { !$0.isArchived }
         let allStatuses = sessions.flatMap { s -> [AttendanceStatus] in
             guard let subject = s.subject, !subject.isArchived else { return [] }
@@ -33,7 +39,9 @@ struct AnalyticsView: View {
         let overall = AttendanceCalculator.summary(statuses: allStatuses, target: target)
 
         let stats: [SubjectStat] = active.map { subject in
-            let statuses = subject.sessions.flatMap { $0.units.map { $0.status } }
+            let statuses = subject.sessions
+                .filter { semester.includes($0.sessionDate) }
+                .flatMap { $0.units.map { $0.status } }
             return SubjectStat(
                 id: subject.id,
                 subject: subject,
@@ -50,7 +58,7 @@ struct AnalyticsView: View {
         let best = tracked.max { $0.summary.percentage < $1.summary.percentage }
         let lowest = tracked.min { $0.summary.percentage < $1.summary.percentage }
         let totalSafe = tracked.map { $0.summary.safeBunks }.reduce(0, +)
-        let trend = weeklyTrend()
+        let trend = weeklyTrend(sessions)
 
         NavigationStack {
             ScrollView {
@@ -233,7 +241,7 @@ struct AnalyticsView: View {
 
     // MARK: Trend data
 
-    private func weeklyTrend() -> [TrendPoint] {
+    private func weeklyTrend(_ sessions: [AttendanceSession]) -> [TrendPoint] {
         var calendar = Calendar(identifier: .gregorian)
         calendar.firstWeekday = 2
         var byWeek: [Date: WeekCount] = [:]

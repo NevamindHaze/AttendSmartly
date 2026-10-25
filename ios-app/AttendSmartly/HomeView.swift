@@ -19,8 +19,18 @@ struct HomeView: View {
     @Query private var holidays: [Holiday]
     @Query private var subjects: [Subject]
 
+    @AppStorage(PrefKey.semesterEnabled) private var semesterEnabled = false
+    @AppStorage(PrefKey.semesterStart) private var semesterStart = ""
+    @AppStorage(PrefKey.semesterEnd) private var semesterEnd = ""
+
     @State private var showSettings = false
+    @State private var showExtra = false
+    @State private var rescheduleRow: TodayClass?
     @State private var errorText: String?
+
+    private var semester: SemesterRange {
+        SemesterRange(enabled: semesterEnabled, start: semesterStart, end: semesterEnd)
+    }
 
     var body: some View {
         let todayStr = DateUtils.isoString(Date())
@@ -34,7 +44,7 @@ struct HomeView: View {
                     Label(DateUtils.longDate(Date()), systemImage: "calendar")
                         .foregroundStyle(.secondary)
 
-                    OverallCard(summary: summary)
+                    OverallCard(summary: summary, semesterOn: semesterEnabled)
 
                     HStack {
                         Text("Today's classes").font(.title2.bold())
@@ -50,14 +60,20 @@ struct HomeView: View {
                             title: "No classes today",
                             text: subjects.isEmpty
                                 ? "Add subjects, or import your Android backup from Settings (gear icon)."
-                                : "Nothing is scheduled for today."
+                                : "Nothing is scheduled for today. Tap + to add an extra class."
                         )
                     } else {
                         ForEach(rows) { row in
                             ClassCard(
                                 row: row,
                                 statusFor: { index in unitStatus(row, index) },
-                                onSet: { index, status in setStatus(row, unit: index, to: status, today: todayStr) }
+                                onSet: { index, status in apply(row, [index: status], today: todayStr) },
+                                onCancel: {
+                                    var all: [Int: AttendanceStatus] = [:]
+                                    for i in 0..<row.expectedUnits { all[i] = .cancelled }
+                                    apply(row, all, today: todayStr)
+                                },
+                                onReschedule: { rescheduleRow = row }
                             )
                         }
                     }
@@ -66,12 +82,23 @@ struct HomeView: View {
             }
             .navigationTitle("AttendSmartly")
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button { showExtra = true } label: { Image(systemName: "plus.circle") }
+                        .accessibilityLabel("Add extra class")
+                        .disabled(subjects.filter { !$0.isArchived }.isEmpty)
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { showSettings = true } label: { Image(systemName: "gearshape") }
                         .accessibilityLabel("Settings")
                 }
             }
             .sheet(isPresented: $showSettings) { SettingsView() }
+            .sheet(isPresented: $showExtra) { AddExtraClassView() }
+            .sheet(item: $rescheduleRow) { row in
+                RescheduleView(row: row) { newDate, start, end in
+                    reschedule(row, to: newDate, start: start, end: end, today: todayStr)
+                }
+            }
             .alert("Couldn't save", isPresented: Binding(
                 get: { errorText != nil },
                 set: { if !$0 { errorText = nil } }
@@ -108,7 +135,7 @@ struct HomeView: View {
             ))
         }
 
-        // Extra / one-off classes recorded for today
+        // Extra / rescheduled classes recorded for today
         for s in sessions where s.sessionDate == todayStr && !usedSessions.contains(s.id) {
             guard let subject = s.subject, !subject.isArchived else { continue }
             rows.append(TodayClass(
@@ -130,39 +157,72 @@ struct HomeView: View {
         row.session?.units.first(where: { $0.unitIndex == index })?.status ?? .unmarked
     }
 
-    private func setStatus(_ row: TodayClass, unit index: Int, to status: AttendanceStatus, today: String) {
-        let session: AttendanceSession
-        if let existing = row.session {
-            session = existing
-        } else {
-            let created = AttendanceSession(
-                sessionDate: today, startTime: row.start, endTime: row.end,
-                expectedUnitCount: row.expectedUnits
-            )
-            created.timetableEntryID = row.entry?.id
-            context.insert(created)
-            created.subject = row.subject
-            session = created
-        }
+    /// Finds today's session for a row, or creates it once.
+    private func ensureSession(for row: TodayClass, on dateISO: String) -> AttendanceSession {
+        if let existing = row.session { return existing }
+        let created = AttendanceSession(
+            sessionDate: dateISO, startTime: row.start, endTime: row.end,
+            expectedUnitCount: row.expectedUnits
+        )
+        created.timetableEntryID = row.entry?.id
+        context.insert(created)
+        created.subject = row.subject
+        return created
+    }
 
-        if let unit = session.units.first(where: { $0.unitIndex == index }) {
-            unit.status = status
-            unit.markedAt = Date()
-        } else {
-            let unit = AttendanceUnit(unitIndex: index, status: status)
-            context.insert(unit)
-            unit.session = session
+    private func setUnits(_ session: AttendanceSession, _ changes: [Int: AttendanceStatus]) {
+        for (index, status) in changes {
+            if let unit = session.units.first(where: { $0.unitIndex == index }) {
+                unit.status = status
+                unit.markedAt = Date()
+            } else {
+                let unit = AttendanceUnit(unitIndex: index, status: status)
+                context.insert(unit)
+                unit.session = session
+            }
         }
+    }
 
+    private func apply(_ row: TodayClass, _ changes: [Int: AttendanceStatus], today: String) {
+        let session = ensureSession(for: row, on: today)
+        setUnits(session, changes)
+        save()
+    }
+
+    private func reschedule(_ row: TodayClass, to newDate: Date, start: String, end: String, today: String) {
+        let newISO = DateUtils.isoString(newDate)
+
+        let original = ensureSession(for: row, on: today)
+        var cancelled: [Int: AttendanceStatus] = [:]
+        for i in 0..<row.expectedUnits { cancelled[i] = .cancelled }
+        setUnits(original, cancelled)
+        original.isRescheduled = true
+        original.notes = "Rescheduled to \(newISO)"
+
+        let moved = AttendanceSession(
+            sessionDate: newISO, startTime: start, endTime: end,
+            expectedUnitCount: row.expectedUnits
+        )
+        moved.isRescheduled = true
+        moved.notes = "Rescheduled from \(today)"
+        context.insert(moved)
+        moved.subject = row.subject
+
+        save()
+    }
+
+    private func save() {
         do { try context.save() } catch { errorText = error.localizedDescription }
     }
 
     private func overallSummary() -> AttendanceSummary {
         let active = subjects.filter { !$0.isArchived }
-        let statuses = sessions.flatMap { s -> [AttendanceStatus] in
-            guard let subject = s.subject, !subject.isArchived else { return [] }
-            return s.units.map { $0.status }
-        }
+        let statuses = sessions
+            .filter { semester.includes($0.sessionDate) }
+            .flatMap { s -> [AttendanceStatus] in
+                guard let subject = s.subject, !subject.isArchived else { return [] }
+                return s.units.map { $0.status }
+            }
         let target = active.isEmpty ? 75 : active.map { $0.targetPercentage }.reduce(0, +) / Double(active.count)
         return AttendanceCalculator.summary(statuses: statuses, target: target)
     }
@@ -181,6 +241,7 @@ struct HomeView: View {
 
 private struct OverallCard: View {
     let summary: AttendanceSummary
+    let semesterOn: Bool
 
     var body: some View {
         let onTrack = summary.conducted == 0 || summary.percentage >= summary.target
@@ -190,7 +251,8 @@ private struct OverallCard: View {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Overall attendance").font(.headline)
-                    Text("Across all subjects").font(.subheadline).foregroundStyle(.secondary)
+                    Text(semesterOn ? "This semester" : "Across all subjects")
+                        .font(.subheadline).foregroundStyle(.secondary)
                 }
                 Spacer()
                 Text(summary.conducted == 0 ? "No data" : (onTrack ? "On track" : "Below target"))
@@ -230,6 +292,8 @@ private struct ClassCard: View {
     let row: TodayClass
     let statusFor: (Int) -> AttendanceStatus
     let onSet: (Int, AttendanceStatus) -> Void
+    let onCancel: () -> Void
+    let onReschedule: () -> Void
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
@@ -243,6 +307,12 @@ private struct ClassCard: View {
                     Spacer()
                     if !row.subject.code.isEmpty {
                         Text(row.subject.code).font(.caption).foregroundStyle(.secondary)
+                    }
+                    Menu {
+                        Button("Cancel class", systemImage: "xmark.circle", role: .destructive, action: onCancel)
+                        Button("Reschedule…", systemImage: "calendar.badge.clock", action: onReschedule)
+                    } label: {
+                        Image(systemName: "ellipsis.circle").foregroundStyle(.secondary)
                     }
                 }
                 Text("\(DateUtils.displayTime(row.start)) – \(DateUtils.displayTime(row.end))"

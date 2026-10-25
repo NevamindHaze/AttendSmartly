@@ -11,6 +11,14 @@ struct SubjectsView: View {
     @State private var subjectToDelete: Subject?
     @State private var errorText: String?
 
+    @AppStorage(PrefKey.semesterEnabled) private var semesterEnabled = false
+    @AppStorage(PrefKey.semesterStart) private var semesterStart = ""
+    @AppStorage(PrefKey.semesterEnd) private var semesterEnd = ""
+
+    private var semester: SemesterRange {
+        SemesterRange(enabled: semesterEnabled, start: semesterStart, end: semesterEnd)
+    }
+
     private var visible: [Subject] {
         subjects.filter { $0.isArchived == showingArchived }
     }
@@ -27,7 +35,7 @@ struct SubjectsView: View {
                                 formSubject = subject
                                 showingForm = true
                             } label: {
-                                SubjectRow(subject: subject)
+                                SubjectRow(subject: subject, semester: semester)
                             }
                             .buttonStyle(.plain)
                             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
@@ -128,10 +136,13 @@ struct SubjectsView: View {
 
 private struct SubjectRow: View {
     let subject: Subject
+    let semester: SemesterRange
 
     var body: some View {
         let summary = AttendanceCalculator.summary(
-            statuses: subject.sessions.flatMap { $0.units.map { $0.status } },
+            statuses: subject.sessions
+                .filter { semester.includes($0.sessionDate) }
+                .flatMap { $0.units.map { $0.status } },
             target: subject.targetPercentage
         )
         let onTrack = summary.conducted == 0 || summary.percentage >= summary.target
