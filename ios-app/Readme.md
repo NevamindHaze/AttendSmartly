@@ -8,7 +8,8 @@ Native SwiftUI + SwiftData (iOS 17+) port of the Android app.
 - Settings (gear on Home): import/export the same JSON backup format as Android
 - Timetable: weekly view, add/edit/delete classes
 - History: past sessions grouped by date, fix marks, add past classes
-- Coming next: Analytics, holidays, extra classes
+- Analytics: overall counts, best/lowest subject, per-subject chart with targets, weekly trend, below/near-target lists
+- Coming next: holidays, extra classes, reminders
 
 Data models mirror the Android entities (dates are `yyyy-MM-dd`, times `HH:mm`, weekday 1 = Monday).
 The store is named `AttendSmartlyV2`; the first starter build used an older, incompatible schema.

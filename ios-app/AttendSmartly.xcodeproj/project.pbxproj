@@ -17,6 +17,7 @@
 		A10000000000000000000205 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000105 /* SettingsView.swift */; };
 		A10000000000000000000206 /* TimetableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000106 /* TimetableView.swift */; };
 		A10000000000000000000207 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000107 /* HistoryView.swift */; };
+		A10000000000000000000208 /* AnalyticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000108 /* AnalyticsView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -31,6 +32,7 @@
 		A10000000000000000000105 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		A10000000000000000000106 /* TimetableView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimetableView.swift; sourceTree = "<group>"; };
 		A10000000000000000000107 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
+		A10000000000000000000108 /* AnalyticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -62,6 +64,7 @@
 				A10000000000000000000105 /* SettingsView.swift */,
 				A10000000000000000000106 /* TimetableView.swift */,
 				A10000000000000000000107 /* HistoryView.swift */,
+				A10000000000000000000108 /* AnalyticsView.swift */,
 			);
 		};
 		A10000000000000000000033 /* Products */ = {
@@ -142,6 +145,7 @@
 			A10000000000000000000205 /* SettingsView.swift in Sources */,
 			A10000000000000000000206 /* TimetableView.swift in Sources */,
 			A10000000000000000000207 /* HistoryView.swift in Sources */,
+			A10000000000000000000208 /* AnalyticsView.swift in Sources */,
 		); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 

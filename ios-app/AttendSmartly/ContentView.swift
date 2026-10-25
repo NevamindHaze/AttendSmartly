@@ -100,7 +100,7 @@ struct ContentView: View {
             HistoryView()
                 .tabItem { Label("History", systemImage: "clock.arrow.circlepath") }
 
-            placeholder("Analytics", symbol: "chart.bar.xaxis", message: "Analytics are coming in a later update.")
+            AnalyticsView()
                 .tabItem { Label("Analytics", systemImage: "chart.bar.xaxis") }
         }
         .tint(DashboardPalette.green)
