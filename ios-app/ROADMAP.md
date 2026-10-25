@@ -25,6 +25,8 @@ A living checklist for the native iOS app. This roadmap tracks iOS work separate
 
 ## P1 — Core feature parity
 
+- [x] Add Home calendar navigation so users can review or mark attendance on past and future dates. Implemented in [PR #3](https://github.com/NevamindHaze/AttendSmartly/pull/3); simulator and device builds pass.
+
 - [ ] Build the Analytics screen in place of the current placeholder. Include overall and per-subject attendance, target progress, safe bunks/recovery units, and useful date or semester filtering.
 - [ ] Add holiday management: create, edit, and delete holidays, and verify that holidays suppress scheduled classes on the matching date.
 - [ ] Add one-off extra classes that do not change the recurring timetable.
