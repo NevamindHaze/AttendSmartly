@@ -1,7 +1,7 @@
 import SwiftUI
 import SwiftData
 
-struct TodayClass: Identifiable {
+struct AttendanceDayClass: Identifiable {
     let id: String
     let subject: Subject
     let entry: TimetableEntry?
@@ -20,45 +20,63 @@ struct HomeView: View {
     @Query private var subjects: [Subject]
 
     @State private var showSettings = false
+    @State private var showCalendarPicker = false
+    @State private var calendarPickerDate = Date()
+    @State private var selectedDate = Date()
     @State private var errorText: String?
 
     var body: some View {
-        let today = Date()
-        let todayStr = DateUtils.isoString(today)
-        let holiday = holidays.first { $0.date == todayStr }
-        let rows = holiday == nil ? todayRows(today) : []
+        let selectedDateISO = DateUtils.isoString(selectedDate)
+        let selectedDateIsToday = Calendar.current.isDateInToday(selectedDate)
+        let holiday = holidays.first { $0.date == selectedDateISO }
+        let rows = holiday == nil ? scheduleRows(on: selectedDate) : []
         let summary = overallSummary()
 
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    Label(DateUtils.longDate(Date()), systemImage: "calendar")
-                        .foregroundStyle(.secondary)
+                    HStack {
+                        Label(DateUtils.longDate(selectedDate), systemImage: "calendar")
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        if !selectedDateIsToday {
+                            Button("Today") {
+                                selectedDate = Calendar.current.startOfDay(for: Date())
+                            }
+                            .font(.caption.bold())
+                            .accessibilityLabel("Return to today")
+                        }
+                    }
 
                     OverallCard(summary: summary)
 
                     HStack {
-                        Text("Today's classes").font(.title2.bold())
+                        Text(selectedDateIsToday ? "Today's classes" : "Classes")
+                            .font(.title2.bold())
                         Spacer()
                         Text("\(rows.count) scheduled").foregroundStyle(.secondary)
                     }
 
                     if let holiday {
-                        infoBox(symbol: "party.popper", title: holiday.title, text: "No classes today.")
+                        infoBox(
+                            symbol: "party.popper",
+                            title: holiday.title,
+                            text: selectedDateIsToday ? "No classes today." : "No classes on this date."
+                        )
                     } else if rows.isEmpty {
                         infoBox(
                             symbol: "tray",
-                            title: "No classes today",
+                            title: selectedDateIsToday ? "No classes today" : "No classes on this date",
                             text: subjects.isEmpty
                                 ? "Add subjects, or import your Android backup from Settings (gear icon)."
-                                : "Nothing is scheduled for today."
+                                : (selectedDateIsToday ? "Nothing is scheduled for today." : "Nothing is scheduled for this date.")
                         )
                     } else {
                         ForEach(rows) { row in
                             ClassCard(
                                 row: row,
                                 statusFor: { index in unitStatus(row, index) },
-                                onSet: { index, status in setStatus(row, unit: index, to: status, today: todayStr) }
+                                onSet: { index, status in setStatus(row, unit: index, to: status, today: selectedDateISO) }
                             )
                         }
                     }
@@ -67,10 +85,52 @@ struct HomeView: View {
             }
             .navigationTitle("AttendSmartly")
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    Button {
+                        calendarPickerDate = selectedDate
+                        showCalendarPicker = true
+                    } label: {
+                        Image(systemName: "calendar")
+                    }
+                    .accessibilityLabel("Choose attendance date")
+
                     Button { showSettings = true } label: { Image(systemName: "gearshape") }
                         .accessibilityLabel("Settings")
                 }
+            }
+            .sheet(isPresented: $showCalendarPicker) {
+                NavigationStack {
+                    VStack(spacing: 12) {
+                        DatePicker(
+                            "Attendance date",
+                            selection: $calendarPickerDate,
+                            displayedComponents: .date
+                        )
+                        .datePickerStyle(.graphical)
+                        .labelsHidden()
+
+                        Text("Choose a past or future day to review or mark attendance.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding()
+                    .navigationTitle("Choose a date")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Cancel") { showCalendarPicker = false }
+                        }
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Done") {
+                                selectedDate = Calendar.current.startOfDay(for: calendarPickerDate)
+                                showCalendarPicker = false
+                            }
+                        }
+                    }
+                }
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
             }
             .sheet(isPresented: $showSettings) { SettingsView() }
             .alert("Couldn't save", isPresented: Binding(
@@ -86,16 +146,16 @@ struct HomeView: View {
 
     // MARK: Data
 
-    private func todayRows(_ date: Date) -> [TodayClass] {
+    private func scheduleRows(on date: Date) -> [AttendanceDayClass] {
         let dateISO = DateUtils.isoString(date)
-        var rows: [TodayClass] = []
+        var rows: [AttendanceDayClass] = []
         var usedSessions = Set<UUID>()
 
         for e in entries where DateUtils.isScheduled(e, on: date) {
             guard let subject = e.subject, !subject.isArchived else { continue }
             let session = sessions.first { $0.sessionDate == dateISO && $0.timetableEntryID == e.id }
             if let session { usedSessions.insert(session.id) }
-            rows.append(TodayClass(
+            rows.append(AttendanceDayClass(
                 id: e.id.uuidString,
                 subject: subject,
                 entry: e,
@@ -107,10 +167,10 @@ struct HomeView: View {
             ))
         }
 
-        // Extra / one-off classes recorded for today
+        // Extra / one-off classes recorded for this date
         for s in sessions where s.sessionDate == dateISO && !usedSessions.contains(s.id) {
             guard let subject = s.subject, !subject.isArchived else { continue }
-            rows.append(TodayClass(
+            rows.append(AttendanceDayClass(
                 id: s.id.uuidString,
                 subject: subject,
                 entry: nil,
@@ -125,11 +185,11 @@ struct HomeView: View {
         return rows.sorted { $0.start < $1.start }
     }
 
-    private func unitStatus(_ row: TodayClass, _ index: Int) -> AttendanceStatus {
+    private func unitStatus(_ row: AttendanceDayClass, _ index: Int) -> AttendanceStatus {
         row.session?.units.first(where: { $0.unitIndex == index })?.status ?? .unmarked
     }
 
-    private func setStatus(_ row: TodayClass, unit index: Int, to status: AttendanceStatus, today: String) {
+    private func setStatus(_ row: AttendanceDayClass, unit index: Int, to status: AttendanceStatus, today: String) {
         let session: AttendanceSession
         if let existing = row.session {
             session = existing
@@ -226,7 +286,7 @@ private struct OverallCard: View {
 }
 
 private struct ClassCard: View {
-    let row: TodayClass
+    let row: AttendanceDayClass
     let statusFor: (Int) -> AttendanceStatus
     let onSet: (Int, AttendanceStatus) -> Void
 
