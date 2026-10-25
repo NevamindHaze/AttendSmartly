@@ -10,6 +10,11 @@
 		A10000000000000000000001 /* AttendSmartlyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000011 /* AttendSmartlyApp.swift */; };
 		A10000000000000000000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000012 /* ContentView.swift */; };
 		A10000000000000000000003 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000014 /* Models.swift */; };
+		A10000000000000000000201 /* AttendanceCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000101 /* AttendanceCalculator.swift */; };
+		A10000000000000000000202 /* BackupService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000102 /* BackupService.swift */; };
+		A10000000000000000000203 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000103 /* HomeView.swift */; };
+		A10000000000000000000204 /* SubjectsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000104 /* SubjectsView.swift */; };
+		A10000000000000000000205 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000105 /* SettingsView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -17,6 +22,11 @@
 		A10000000000000000000012 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		A10000000000000000000014 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		A10000000000000000000015 /* AttendSmartly.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AttendSmartly.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A10000000000000000000101 /* AttendanceCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttendanceCalculator.swift; sourceTree = "<group>"; };
+		A10000000000000000000102 /* BackupService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackupService.swift; sourceTree = "<group>"; };
+		A10000000000000000000103 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		A10000000000000000000104 /* SubjectsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubjectsView.swift; sourceTree = "<group>"; };
+		A10000000000000000000105 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -41,6 +51,11 @@
 				A10000000000000000000011 /* AttendSmartlyApp.swift */,
 				A10000000000000000000012 /* ContentView.swift */,
 				A10000000000000000000014 /* Models.swift */,
+				A10000000000000000000101 /* AttendanceCalculator.swift */,
+				A10000000000000000000102 /* BackupService.swift */,
+				A10000000000000000000103 /* HomeView.swift */,
+				A10000000000000000000104 /* SubjectsView.swift */,
+				A10000000000000000000105 /* SettingsView.swift */,
 			);
 		};
 		A10000000000000000000033 /* Products */ = {
@@ -114,6 +129,11 @@
 			A10000000000000000000001 /* AttendSmartlyApp.swift in Sources */,
 			A10000000000000000000002 /* ContentView.swift in Sources */,
 			A10000000000000000000003 /* Models.swift in Sources */,
+			A10000000000000000000201 /* AttendanceCalculator.swift in Sources */,
+			A10000000000000000000202 /* BackupService.swift in Sources */,
+			A10000000000000000000203 /* HomeView.swift in Sources */,
+			A10000000000000000000204 /* SubjectsView.swift in Sources */,
+			A10000000000000000000205 /* SettingsView.swift in Sources */,
 		); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 
