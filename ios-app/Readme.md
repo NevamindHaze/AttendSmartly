@@ -1,5 +1,7 @@
 # AttendSmartly iOS
 
+See the [iOS roadmap](ROADMAP.md) for the prioritized, trackable feature and quality checklist.
+
 Native SwiftUI + SwiftData (iOS 17+) port of the Android app.
 
 ## Status
