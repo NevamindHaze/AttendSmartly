@@ -8,11 +8,15 @@ struct AddExtraClassView: View {
     @Query(sort: \Subject.name) private var subjects: [Subject]
 
     @State private var subjectID: UUID?
-    @State private var date = Date()
+    @State private var date: Date
     @State private var start = DateUtils.time(from: "09:00")
     @State private var end = DateUtils.time(from: "10:00")
     @State private var units = 1
     @State private var errorText: String?
+
+    init(initialDate: Date = Date()) {
+        _date = State(initialValue: initialDate)
+    }
 
     var body: some View {
         NavigationStack {
@@ -108,7 +112,7 @@ struct RescheduleView: View {
                     DatePicker("Ends", selection: $end, displayedComponents: .hourAndMinute)
                 }
                 Section {
-                    Text("Today's class is marked cancelled, and a new class is added on the new date.")
+                    Text("This class is marked cancelled, and a new class is added on the new date.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }

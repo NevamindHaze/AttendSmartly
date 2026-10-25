@@ -25,6 +25,9 @@ struct HomeView: View {
 
     @State private var showSettings = false
     @State private var showExtra = false
+    @State private var showCalendarPicker = false
+    @State private var calendarPickerDate = Date()
+    @State private var selectedDate = Date()
     @State private var rescheduleRow: TodayClass?
     @State private var errorText: String?
 
@@ -33,34 +36,51 @@ struct HomeView: View {
     }
 
     var body: some View {
-        let todayStr = DateUtils.isoString(Date())
+        let todayStr = DateUtils.isoString(selectedDate)
+        let selectedIsToday = Calendar.current.isDateInToday(selectedDate)
         let holiday = holidays.first { $0.date == todayStr }
-        let rows = holiday == nil ? todayRows(todayStr) : []
+        let rows = holiday == nil ? scheduleRows(on: selectedDate) : []
         let summary = overallSummary()
 
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    Label(DateUtils.longDate(Date()), systemImage: "calendar")
-                        .foregroundStyle(.secondary)
+                    HStack {
+                        Label(DateUtils.longDate(selectedDate), systemImage: "calendar")
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        if !selectedIsToday {
+                            Button("Today") {
+                                selectedDate = Calendar.current.startOfDay(for: Date())
+                            }
+                            .font(.caption.bold())
+                            .accessibilityLabel("Return to today")
+                        }
+                    }
 
                     OverallCard(summary: summary, semesterOn: semesterEnabled)
 
                     HStack {
-                        Text("Today's classes").font(.title2.bold())
+                        Text(selectedIsToday ? "Today's classes" : "Classes").font(.title2.bold())
                         Spacer()
                         Text("\(rows.count) scheduled").foregroundStyle(.secondary)
                     }
 
                     if let holiday {
-                        infoBox(symbol: "party.popper", title: holiday.title, text: "No classes today.")
+                        infoBox(
+                            symbol: "party.popper",
+                            title: holiday.title,
+                            text: selectedIsToday ? "No classes today." : "No classes on this date."
+                        )
                     } else if rows.isEmpty {
                         infoBox(
                             symbol: "tray",
-                            title: "No classes today",
+                            title: selectedIsToday ? "No classes today" : "No classes on this date",
                             text: subjects.isEmpty
                                 ? "Add subjects, or import your Android backup from Settings (gear icon)."
-                                : "Nothing is scheduled for today. Tap + to add an extra class."
+                                : (selectedIsToday
+                                   ? "Nothing is scheduled for today. Tap + to add an extra class."
+                                   : "Nothing is scheduled for this date. Tap + to add an extra class.")
                         )
                     } else {
                         ForEach(rows) { row in
@@ -87,13 +107,55 @@ struct HomeView: View {
                         .accessibilityLabel("Add extra class")
                         .disabled(subjects.filter { !$0.isArchived }.isEmpty)
                 }
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    Button {
+                        calendarPickerDate = selectedDate
+                        showCalendarPicker = true
+                    } label: {
+                        Image(systemName: "calendar")
+                    }
+                    .accessibilityLabel("Choose attendance date")
+
                     Button { showSettings = true } label: { Image(systemName: "gearshape") }
                         .accessibilityLabel("Settings")
                 }
             }
+            .sheet(isPresented: $showCalendarPicker) {
+                NavigationStack {
+                    VStack(spacing: 12) {
+                        DatePicker(
+                            "Attendance date",
+                            selection: $calendarPickerDate,
+                            displayedComponents: .date
+                        )
+                        .datePickerStyle(.graphical)
+                        .labelsHidden()
+
+                        Text("Choose a past or future day to review or mark attendance.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding()
+                    .navigationTitle("Choose a date")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Cancel") { showCalendarPicker = false }
+                        }
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Done") {
+                                selectedDate = Calendar.current.startOfDay(for: calendarPickerDate)
+                                showCalendarPicker = false
+                            }
+                        }
+                    }
+                }
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+            }
             .sheet(isPresented: $showSettings) { SettingsView() }
-            .sheet(isPresented: $showExtra) { AddExtraClassView() }
+            .sheet(isPresented: $showExtra) { AddExtraClassView(initialDate: selectedDate) }
             .sheet(item: $rescheduleRow) { row in
                 RescheduleView(row: row) { newDate, start, end in
                     reschedule(row, to: newDate, start: start, end: end, today: todayStr)
@@ -112,15 +174,13 @@ struct HomeView: View {
 
     // MARK: Data
 
-    private func todayRows(_ todayStr: String) -> [TodayClass] {
-        let dow = DateUtils.dayOfWeek(Date())
+    private func scheduleRows(on date: Date) -> [TodayClass] {
+        let todayStr = DateUtils.isoString(date)
         var rows: [TodayClass] = []
         var usedSessions = Set<UUID>()
 
-        for e in entries where e.isActive && e.dayOfWeek == dow {
+        for e in entries where DateUtils.isScheduled(e, on: date) {
             guard let subject = e.subject, !subject.isArchived else { continue }
-            if !e.startDate.isEmpty && e.startDate > todayStr { continue }
-            if !e.endDate.isEmpty && e.endDate < todayStr { continue }
             let session = sessions.first { $0.sessionDate == todayStr && $0.timetableEntryID == e.id }
             if let session { usedSessions.insert(session.id) }
             rows.append(TodayClass(
@@ -135,7 +195,7 @@ struct HomeView: View {
             ))
         }
 
-        // Extra / rescheduled classes recorded for today
+        // Extra / rescheduled classes recorded for this date
         for s in sessions where s.sessionDate == todayStr && !usedSessions.contains(s.id) {
             guard let subject = s.subject, !subject.isArchived else { continue }
             rows.append(TodayClass(

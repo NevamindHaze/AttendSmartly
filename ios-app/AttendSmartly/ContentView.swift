@@ -81,6 +81,23 @@ enum DateUtils {
         let h12 = h % 12 == 0 ? 12 : h % 12
         return "\(h12):\(String(format: "%02d", m)) \(suffix)"
     }
+
+    /// Returns whether a recurring timetable entry is active on a specific calendar date.
+    /// ISO dates are fixed-width yyyy-MM-dd strings, so lexical comparison is chronological.
+    static func isScheduled(_ entry: TimetableEntry, on date: Date) -> Bool {
+        let dateISO = isoString(date)
+        guard entry.isActive, entry.dayOfWeek == dayOfWeek(date) else { return false }
+        guard entry.startDate.isEmpty || entry.startDate <= dateISO else { return false }
+        guard entry.endDate.isEmpty || entry.endDate >= dateISO else { return false }
+        return true
+    }
+
+    /// Resolves a Monday-first weekday selection to its date in the current week.
+    static func date(forDayOfWeek day: Int, inWeekContaining date: Date) -> Date {
+        let calendar = Calendar.current
+        let startOfDate = calendar.startOfDay(for: date)
+        return calendar.date(byAdding: .day, value: day - dayOfWeek(date), to: startOfDate) ?? startOfDate
+    }
 }
 
 // MARK: - Root
