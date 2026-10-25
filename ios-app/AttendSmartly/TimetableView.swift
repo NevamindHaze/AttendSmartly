@@ -7,6 +7,7 @@ struct TimetableView: View {
     @Query private var subjects: [Subject]
 
     @State private var day: Int = DateUtils.dayOfWeek(Date())
+    @State private var showAllEntries = false
     @State private var formEntry: TimetableEntry?
     @State private var showForm = false
     @State private var errorText: String?
@@ -14,8 +15,11 @@ struct TimetableView: View {
     private static let dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
     var body: some View {
-        let dayEntries = entries
-            .filter { $0.dayOfWeek == day && $0.subject != nil }
+        let selectedDate = DateUtils.date(forDayOfWeek: day, inWeekContaining: Date())
+        let selectedDateISO = DateUtils.isoString(selectedDate)
+        let allDayEntries = entries.filter { $0.dayOfWeek == day && $0.subject != nil }
+        let dayEntries = allDayEntries
+            .filter { showAllEntries || DateUtils.isScheduled($0, on: selectedDate) }
             .sorted { $0.startTime < $1.startTime }
 
         NavigationStack {
@@ -26,17 +30,36 @@ struct TimetableView: View {
                     }
                 }
                 .pickerStyle(.segmented)
-                .padding()
+                .padding(.horizontal)
+                .padding(.top)
+
+                HStack {
+                    Text(DateUtils.prettyDate(selectedDateISO))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                }
+                .padding(.horizontal)
+
+                Toggle("Show inactive or out-of-range classes", isOn: $showAllEntries)
+                    .font(.footnote)
+                    .padding(.horizontal)
+                    .padding(.vertical, 8)
 
                 if dayEntries.isEmpty {
                     VStack(spacing: 12) {
                         Image(systemName: "calendar")
                             .font(.system(size: 36, weight: .medium))
                             .foregroundStyle(DashboardPalette.green)
-                        Text("No classes on this day").font(.title3.bold())
+                        Text(showAllEntries || allDayEntries.isEmpty
+                             ? "No classes on this day"
+                             : "No active classes on this date")
+                            .font(.title3.bold())
                         Text(subjects.isEmpty
                              ? "Add a subject first, then schedule it here."
-                             : "Tap + to schedule a class.")
+                             : (!showAllEntries && !allDayEntries.isEmpty
+                                ? "Turn on “Show inactive or out-of-range classes” to review other schedules."
+                                : "Tap + to schedule a class."))
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)

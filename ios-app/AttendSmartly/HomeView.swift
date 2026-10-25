@@ -23,9 +23,10 @@ struct HomeView: View {
     @State private var errorText: String?
 
     var body: some View {
-        let todayStr = DateUtils.isoString(Date())
+        let today = Date()
+        let todayStr = DateUtils.isoString(today)
         let holiday = holidays.first { $0.date == todayStr }
-        let rows = holiday == nil ? todayRows(todayStr) : []
+        let rows = holiday == nil ? todayRows(today) : []
         let summary = overallSummary()
 
         NavigationStack {
@@ -85,16 +86,14 @@ struct HomeView: View {
 
     // MARK: Data
 
-    private func todayRows(_ todayStr: String) -> [TodayClass] {
-        let dow = DateUtils.dayOfWeek(Date())
+    private func todayRows(_ date: Date) -> [TodayClass] {
+        let dateISO = DateUtils.isoString(date)
         var rows: [TodayClass] = []
         var usedSessions = Set<UUID>()
 
-        for e in entries where e.isActive && e.dayOfWeek == dow {
+        for e in entries where DateUtils.isScheduled(e, on: date) {
             guard let subject = e.subject, !subject.isArchived else { continue }
-            if !e.startDate.isEmpty && e.startDate > todayStr { continue }
-            if !e.endDate.isEmpty && e.endDate < todayStr { continue }
-            let session = sessions.first { $0.sessionDate == todayStr && $0.timetableEntryID == e.id }
+            let session = sessions.first { $0.sessionDate == dateISO && $0.timetableEntryID == e.id }
             if let session { usedSessions.insert(session.id) }
             rows.append(TodayClass(
                 id: e.id.uuidString,
@@ -109,7 +108,7 @@ struct HomeView: View {
         }
 
         // Extra / one-off classes recorded for today
-        for s in sessions where s.sessionDate == todayStr && !usedSessions.contains(s.id) {
+        for s in sessions where s.sessionDate == dateISO && !usedSessions.contains(s.id) {
             guard let subject = s.subject, !subject.isArchived else { continue }
             rows.append(TodayClass(
                 id: s.id.uuidString,
