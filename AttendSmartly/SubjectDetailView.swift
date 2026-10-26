@@ -14,6 +14,7 @@ struct SubjectDetailView: View {
     @State private var month = Calendar.current.startOfMonth(for: Date())
     @State private var showEdit = false
     @State private var editing: AttendanceSession?
+    @Query(sort: \Assignment.dueDate) private var assignments: [Assignment]
 
     private var semester: SemesterRange {
         SemesterRange(enabled: semesterEnabled, start: semesterStart, end: semesterEnd)
@@ -34,6 +35,7 @@ struct SubjectDetailView: View {
                     .padding(18)
                     .tile(Pastel.surface, radius: 28)
                 schedule
+                assignmentsCard
                 trend(sessions, target: subject.targetPercentage)
                 recent(subject.sessions)
             }
@@ -127,6 +129,52 @@ struct SubjectDetailView: View {
         .padding(.vertical, 9)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Pastel.surface.opacity(0.6), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    // MARK: Assignments
+
+    private var assignmentsCard: some View {
+        let now = Date()
+        let mine = assignments.filter { $0.subjectID == subject.id }
+        let open = mine.filter { !$0.isCompleted }
+        let late = mine.filter { if case .doneLate = $0.status(now: now) { return true }; return false }.count
+        let onTime = mine.filter { $0.status(now: now) == .doneOnTime }.count
+
+        return NavigationLink {
+            AssignmentsView(subjectFilter: subject.id)
+        } label: {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Text("Assignments")
+                        .font(.system(.headline, design: .rounded).weight(.bold))
+                    Spacer()
+                    Image(systemName: "chevron.right").font(.footnote.weight(.bold)).opacity(0.5)
+                }
+                if mine.isEmpty {
+                    Text("None yet. Tap to add one for this subject.")
+                        .font(.subheadline).opacity(0.75)
+                } else {
+                    ForEach(open.prefix(3)) { assignment in
+                        let status = assignment.status(now: now)
+                        HStack(spacing: 8) {
+                            Image(systemName: status.symbol).foregroundStyle(status.tint)
+                            Text(assignment.title).font(.subheadline.weight(.semibold)).lineLimit(1)
+                            Spacer(minLength: 4)
+                            Text(assignment.dueDate < now ? status.label : AssignmentFormat.due(assignment.dueDate, now: now))
+                                .font(.caption).opacity(0.75).lineLimit(1)
+                        }
+                    }
+                    Text("\(open.count) to do  ·  \(onTime) on time  ·  \(late) late")
+                        .font(.caption.weight(.semibold))
+                        .opacity(0.7)
+                }
+            }
+            .foregroundStyle(Pastel.ink)
+            .padding(18)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .tile(Pastel.butter, radius: 28)
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: Weekly schedule

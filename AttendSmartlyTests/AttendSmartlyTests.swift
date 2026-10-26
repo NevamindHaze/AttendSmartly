@@ -244,6 +244,62 @@ final class AttendSmartlyTests: XCTestCase {
         XCTAssertTrue(snapshot.classes(on: monday).isEmpty)
     }
 
+    // MARK: Assignments
+
+    func testAssignmentStatusCoversEveryCase() throws {
+        let now = try XCTUnwrap(ISO8601DateFormatter().date(from: "2026-10-26T12:00:00Z"))
+        let hour: TimeInterval = 3600
+        var utc = Calendar(identifier: .gregorian)
+        utc.timeZone = try XCTUnwrap(TimeZone(identifier: "UTC"))
+
+        XCTAssertEqual(AssignmentStatus.of(due: now.addingTimeInterval(5 * hour), completedAt: nil, now: now, calendar: utc), .dueToday)
+        XCTAssertEqual(AssignmentStatus.of(due: now.addingTimeInterval(30 * hour), completedAt: nil, now: now, calendar: utc), .dueSoon)
+        XCTAssertEqual(AssignmentStatus.of(due: now.addingTimeInterval(5 * 24 * hour), completedAt: nil, now: now, calendar: utc), .upcoming)
+        XCTAssertEqual(
+            AssignmentStatus.of(due: now.addingTimeInterval(-2 * 24 * hour), completedAt: nil, now: now, calendar: utc),
+            .overdue(by: 2 * 24 * hour)
+        )
+        XCTAssertEqual(
+            AssignmentStatus.of(due: now, completedAt: now.addingTimeInterval(-hour), now: now, calendar: utc),
+            .doneOnTime
+        )
+        XCTAssertEqual(
+            AssignmentStatus.of(due: now, completedAt: now.addingTimeInterval(3 * hour), now: now, calendar: utc),
+            .doneLate(by: 3 * hour)
+        )
+        XCTAssertEqual(AssignmentStatus.overdue(by: 2 * 24 * hour).label, "Overdue by 2 days")
+        XCTAssertEqual(AssignmentStatus.doneLate(by: 3 * hour).label, "Done 3 hours late")
+    }
+
+    func testAssignmentsSurviveBackupRoundTripWithoutDuplicates() throws {
+        let container = try makeContainer()
+        let context = ModelContext(container)
+        let subject = Subject(name: "Surgery")
+        context.insert(subject)
+        let due = Date(timeIntervalSince1970: 1_793_000_000)
+        let done = Assignment(title: "Case report", dueDate: due, subjectID: subject.id)
+        done.completedAt = due.addingTimeInterval(-3600)
+        context.insert(done)
+        context.insert(Assignment(title: "Reading log", dueDate: due.addingTimeInterval(86_400)))
+        try context.save()
+
+        let exported = try BackupService.exportData(from: context)
+
+        let fresh = ModelContext(try makeContainer())
+        let first = try BackupService.importData(exported, into: fresh, replaceExisting: true)
+        XCTAssertEqual(first.assignments, 2)
+        let restored = try fresh.fetch(FetchDescriptor<Assignment>(sortBy: [SortDescriptor(\.dueDate)]))
+        XCTAssertEqual(restored.map(\.title), ["Case report", "Reading log"])
+        let restoredSubject = try XCTUnwrap(fresh.fetch(FetchDescriptor<Subject>()).first)
+        XCTAssertEqual(restored.first?.subjectID, restoredSubject.id)
+        XCTAssertEqual(restored.first?.status(now: due), .doneOnTime)
+        XCTAssertNil(restored.last?.completedAt)
+
+        let second = try BackupService.importData(exported, into: fresh, replaceExisting: false)
+        XCTAssertEqual(second.assignments, 0)
+        XCTAssertEqual(try fresh.fetch(FetchDescriptor<Assignment>()).count, 2)
+    }
+
     func testInvalidBackupIsRejected() throws {
         let container = try makeContainer()
         let context = ModelContext(container)
@@ -259,7 +315,8 @@ final class AttendSmartlyTests: XCTestCase {
             TimetableEntry.self,
             AttendanceSession.self,
             AttendanceUnit.self,
-            Holiday.self
+            Holiday.self,
+            Assignment.self
         ])
         let configuration = ModelConfiguration(
             "AttendSmartlyTests",

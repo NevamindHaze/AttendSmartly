@@ -14,6 +14,8 @@ struct BackupFile: Codable {
     var sessions: [BSession]?
     var units: [BUnit]?
     var holidays: [BHoliday]?
+    /// iOS only. The Android app ignores this key.
+    var assignments: [BAssignment]?
 }
 
 struct BSubject: Codable {
@@ -88,17 +90,28 @@ struct BHoliday: Codable {
     var notes: String?
 }
 
+struct BAssignment: Codable {
+    var title: String?
+    var notes: String?
+    var subjectId: Int?
+    var dueDate: Int64?
+    var completedAt: Int64?
+    var createdAt: Int64?
+}
+
 struct ImportResult {
     var subjects = 0
     var entries = 0
     var sessions = 0
     var units = 0
     var holidays = 0
+    var assignments = 0
     var skipped = 0
     var alreadyPresent = 0
 
     var summary: String {
         var text = "Imported \(subjects) subjects, \(entries) timetable entries, \(sessions) sessions, \(units) attendance units and \(holidays) holidays."
+        if assignments > 0 { text += " Also imported \(assignments) assignments." }
         if alreadyPresent > 0 { text += " Left out \(alreadyPresent) items that were already in the app." }
         if skipped > 0 { text += " Skipped \(skipped) items that referenced missing data." }
         return text
@@ -151,6 +164,7 @@ enum BackupService {
         for s in try context.fetch(FetchDescriptor<AttendanceSession>()) { context.delete(s) }
         for u in try context.fetch(FetchDescriptor<AttendanceUnit>()) { context.delete(u) }
         for h in try context.fetch(FetchDescriptor<Holiday>()) { context.delete(h) }
+        for a in try context.fetch(FetchDescriptor<Assignment>()) { context.delete(a) }
         try context.save()
     }
 
@@ -294,6 +308,25 @@ enum BackupService {
             result.holidays += 1
         }
 
+        let existingAssignments = Set(try context.fetch(FetchDescriptor<Assignment>()).map {
+            key($0.title) + "|" + String(Int64($0.dueDate.timeIntervalSince1970 / 60))
+        })
+        for b in backup.assignments ?? [] {
+            let title = text(b.title)
+            guard !title.isEmpty, let dueMillis = b.dueDate, dueMillis > 0 else { result.skipped += 1; continue }
+            let due = date(fromMillis: dueMillis)
+            if existingAssignments.contains(key(title) + "|" + String(Int64(due.timeIntervalSince1970 / 60))) {
+                result.alreadyPresent += 1
+                continue
+            }
+            let a = Assignment(title: title, dueDate: due, subjectID: b.subjectId.flatMap { subjectMap[$0]?.id })
+            a.notes = text(b.notes)
+            if let done = b.completedAt, done > 0 { a.completedAt = date(fromMillis: done) }
+            a.createdAt = date(fromMillis: b.createdAt)
+            context.insert(a)
+            result.assignments += 1
+        }
+
         try context.save()
         return result
     }
@@ -303,6 +336,7 @@ enum BackupService {
         let entries = try context.fetch(FetchDescriptor<TimetableEntry>())
         let sessions = try context.fetch(FetchDescriptor<AttendanceSession>(sortBy: [SortDescriptor(\.createdAt)]))
         let holidays = try context.fetch(FetchDescriptor<Holiday>())
+        let assignments = try context.fetch(FetchDescriptor<Assignment>(sortBy: [SortDescriptor(\.dueDate)]))
         let now = millis(Date())
 
         var subjectIds: [UUID: Int] = [:]
@@ -368,6 +402,19 @@ enum BackupService {
 
         file.holidays = holidays.enumerated().map { (i, h) in
             BHoliday(id: i + 1, date: h.date, title: h.title, notes: h.notes)
+        }
+
+        if !assignments.isEmpty {
+            file.assignments = assignments.map { a in
+                BAssignment(
+                    title: a.title,
+                    notes: a.notes,
+                    subjectId: a.subjectID.flatMap { subjectIds[$0] },
+                    dueDate: millis(a.dueDate),
+                    completedAt: a.completedAt.map(millis),
+                    createdAt: millis(a.createdAt)
+                )
+            }
         }
 
         let encoder = JSONEncoder()

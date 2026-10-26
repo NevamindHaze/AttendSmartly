@@ -107,7 +107,10 @@ struct ContentView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.scenePhase) private var scenePhase
     @Query private var entries: [TimetableEntry]
+    @Query private var assignments: [Assignment]
+    @Query private var subjects: [Subject]
     @AppStorage(PrefKey.remindersEnabled) private var remindersEnabled = false
+    @AppStorage(PrefKey.assignmentRemindersEnabled) private var assignmentRemindersEnabled = true
 
     /// Changes whenever anything that affects reminders changes.
     private var reminderSignature: String {
@@ -119,8 +122,11 @@ struct ContentView: View {
             key += "|\(subject.name)|\(subject.isArchived)|\(e.roomOverride)"
             parts.append(key)
         }
+        for a in assignments where !a.isCompleted {
+            parts.append("a|\(a.id)|\(a.title)|\(a.dueDate.timeIntervalSince1970)|\(a.subjectID?.uuidString ?? "")")
+        }
         parts.sort()
-        return "\(remindersEnabled)#" + parts.joined(separator: ";")
+        return "\(remindersEnabled)|\(assignmentRemindersEnabled)#" + parts.joined(separator: ";")
     }
 
     var body: some View {
@@ -143,7 +149,13 @@ struct ContentView: View {
         .tint(DashboardPalette.green)
         .task(id: reminderSignature) { @MainActor in
             let items = ReminderService.items(from: entries)
-            await ReminderService.reschedule(items: items, enabled: remindersEnabled)
+            let oneOff = ReminderService.assignmentItems(from: assignments, subjects: subjects)
+            await ReminderService.reschedule(
+                items: items,
+                enabled: remindersEnabled,
+                oneOff: oneOff,
+                oneOffEnabled: assignmentRemindersEnabled
+            )
         }
         .onChange(of: scenePhase, initial: true) { _, phase in
             switch phase {

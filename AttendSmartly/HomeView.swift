@@ -92,6 +92,8 @@ struct HomeView: View {
                                   symbol: "book.fill", color: Pastel.lavender)
                     }
 
+                    HomeAssignmentsCard()
+
                     Text(selectedIsToday ? "Today's classes" : "Classes")
                         .font(.system(.title3, design: .rounded).weight(.bold))
                         .foregroundStyle(Pastel.ink)

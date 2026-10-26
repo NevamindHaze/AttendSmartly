@@ -1,6 +1,6 @@
 New in this update:
-• Widgets: see your attendance and today's classes on the Home Screen and Lock Screen
-• Subject pages: tap any subject for a month calendar of your marks, its trend and recent classes
-• Timetable scan: add classes from a photo of your timetable (Timetable → + → Scan)
-• Weekly automatic backups, saved to Files → On My iPhone → AttendSmartly → Backups
-• The date picker on Home now opens with the calendar at the top
+• Assignments: add homework with a due date and time, and see what's overdue, due today or coming up
+• Tick an assignment when you hand it in, and it records whether you were on time or late, and by how much
+• Reminders a day before and an hour before each due time (Settings → Reminders)
+• An Assignments card on Home, and each subject page shows that subject's assignments
+• Assignments are included in your backups

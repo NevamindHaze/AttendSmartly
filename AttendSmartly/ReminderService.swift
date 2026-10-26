@@ -11,7 +11,52 @@ struct ReminderItem {
     let minute: Int
 }
 
+/// A one-off reminder at an exact time (used for assignment due dates).
+struct OneOffReminder {
+    let id: String
+    let title: String
+    let body: String
+    let fireDate: Date
+}
+
 enum ReminderService {
+    /// Asks for permission only if the person hasn't been asked yet.
+    static func requestAuthorizationIfNeeded() async {
+        let settings = await UNUserNotificationCenter.current().notificationSettings()
+        if settings.authorizationStatus == .notDetermined {
+            _ = await requestAuthorization()
+        }
+    }
+
+    /// A reminder a day before and an hour before each unfinished assignment.
+    @MainActor
+    static func assignmentItems(from assignments: [Assignment], subjects: [Subject], now: Date = Date()) -> [OneOffReminder] {
+        var result: [OneOffReminder] = []
+        for a in assignments where !a.isCompleted && a.dueDate > now {
+            let subject = subjects.first { $0.id == a.subjectID }?.name
+            let detail = subject.map { "\($0) · " } ?? ""
+            let dayBefore = a.dueDate.addingTimeInterval(-24 * 60 * 60)
+            if dayBefore > now {
+                result.append(OneOffReminder(
+                    id: "assignment-\(a.id.uuidString)-day",
+                    title: "Due tomorrow: \(a.title)",
+                    body: "\(detail)Due at \(a.dueDate.formatted(date: .omitted, time: .shortened))",
+                    fireDate: dayBefore
+                ))
+            }
+            let hourBefore = a.dueDate.addingTimeInterval(-60 * 60)
+            if hourBefore > now {
+                result.append(OneOffReminder(
+                    id: "assignment-\(a.id.uuidString)-hour",
+                    title: "Due in 1 hour: \(a.title)",
+                    body: "\(detail)Hand it in by \(a.dueDate.formatted(date: .omitted, time: .shortened))",
+                    fireDate: hourBefore
+                ))
+            }
+        }
+        return result.sorted { $0.fireDate < $1.fireDate }
+    }
+
     static func requestAuthorization() async -> Bool {
         do {
             return try await UNUserNotificationCenter.current()
@@ -55,17 +100,38 @@ enum ReminderService {
         return result
     }
 
-    static func reschedule(items: [ReminderItem], enabled: Bool) async {
+    static func reschedule(
+        items: [ReminderItem],
+        enabled: Bool,
+        oneOff: [OneOffReminder] = [],
+        oneOffEnabled: Bool = false
+    ) async {
         let center = UNUserNotificationCenter.current()
         center.removeAllPendingNotificationRequests()
-        guard enabled else { return }
+        guard enabled || oneOffEnabled else { return }
 
         let settings = await center.notificationSettings()
         guard settings.authorizationStatus == .authorized
                 || settings.authorizationStatus == .provisional else { return }
 
-        // iOS keeps at most 64 pending local notifications.
-        for item in items.prefix(60) {
+        // iOS keeps at most 64 pending local notifications: the soonest
+        // assignment reminders first, then weekly class reminders.
+        var budget = 60
+        if oneOffEnabled {
+            for item in oneOff.prefix(30) {
+                let content = UNMutableNotificationContent()
+                content.title = item.title
+                content.body = item.body
+                content.sound = .default
+                let parts = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: item.fireDate)
+                let trigger = UNCalendarNotificationTrigger(dateMatching: parts, repeats: false)
+                try? await center.add(UNNotificationRequest(identifier: item.id, content: content, trigger: trigger))
+                budget -= 1
+            }
+        }
+        guard enabled else { return }
+
+        for item in items.prefix(budget) {
             let content = UNMutableNotificationContent()
             content.title = item.title
             content.body = item.body

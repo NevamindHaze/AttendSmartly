@@ -14,6 +14,7 @@ struct SettingsView: View {
     @AppStorage(PrefKey.semesterStart) private var semesterStart = ""
     @AppStorage(PrefKey.semesterEnd) private var semesterEnd = ""
     @AppStorage(PrefKey.remindersEnabled) private var remindersEnabled = false
+    @AppStorage(PrefKey.assignmentRemindersEnabled) private var assignmentRemindersEnabled = true
     @AppStorage(PrefKey.userName) private var userName = "Marshal"
     @AppStorage(PrefKey.profilePhotoVersion) private var photoVersion = 0
 
@@ -70,10 +71,11 @@ struct SettingsView: View {
 
                 Section {
                     Toggle("Class reminders", isOn: $remindersEnabled)
+                    Toggle("Assignment reminders", isOn: $assignmentRemindersEnabled)
                 } header: {
                     Text("Reminders")
                 } footer: {
-                    Text("A weekly notification before each timetable class, using that class's reminder time (10 minutes by default).")
+                    Text("Class reminders arrive before each timetable class (10 minutes by default). Assignment reminders arrive a day before and an hour before each due time.")
                 }
 
                 Section {
@@ -161,6 +163,16 @@ struct SettingsView: View {
                         message = "Couldn't use that photo. Try a different one."
                     }
                     photoItem = nil
+                }
+            }
+            .onChange(of: assignmentRemindersEnabled) { _, isOn in
+                guard isOn else { return }
+                Task { @MainActor in
+                    let granted = await ReminderService.requestAuthorization()
+                    if !granted {
+                        assignmentRemindersEnabled = false
+                        message = "Notifications are turned off for AttendSmartly. Enable them in iOS Settings → Notifications, then try again."
+                    }
                 }
             }
             .onChange(of: remindersEnabled) { _, isOn in

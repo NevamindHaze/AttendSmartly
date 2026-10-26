@@ -11,7 +11,8 @@ struct AttendSmartlyApp: App {
             TimetableEntry.self,
             AttendanceSession.self,
             AttendanceUnit.self,
-            Holiday.self
+            Holiday.self,
+            Assignment.self
         ])
         // New store name: the first starter build used an incompatible schema.
         let config = ModelConfiguration("AttendSmartlyV2", schema: schema)
