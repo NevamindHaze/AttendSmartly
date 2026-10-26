@@ -8,6 +8,7 @@ on:
       - "AttendSmartlyTests/**"
       - "AttendSmartlyWidget/**"
       - ".github/workflows/ios-build.yml"
+      - ".github/sidestore/**"
   pull_request:
     paths:
       - "AttendSmartly/**"
@@ -15,6 +16,7 @@ on:
       - "AttendSmartlyTests/**"
       - "AttendSmartlyWidget/**"
       - ".github/workflows/ios-build.yml"
+      - ".github/sidestore/**"
   workflow_dispatch:
 
 permissions:
@@ -213,45 +215,91 @@ jobs:
           build_tag="ios-build-$RUN_NUMBER"
           size=$(stat -f%z "$ipa")
 
-          python3 - "$REPO" "$build_tag" "$RUN_NUMBER" "$size" > "$RUNNER_TEMP/source.json" <<'PY'
+          # The previous source, so its version history carries over.
+          gh release download "$tag" --repo "$REPO" --pattern source.json \
+            --output "$RUNNER_TEMP/previous-source.json" 2>/dev/null || echo "{}" > "$RUNNER_TEMP/previous-source.json"
+
+          python3 - "$REPO" "$build_tag" "$RUN_NUMBER" "$size" "$RUNNER_TEMP/previous-source.json" \
+            > "$RUNNER_TEMP/source.json" <<'PY'
           import json
           import sys
           from datetime import datetime, timezone
+          from pathlib import Path
 
-          repo, tag, run, size = sys.argv[1], sys.argv[2], sys.argv[3], int(sys.argv[4])
-          base = f"https://github.com/{repo}/releases/download/{tag}"
-          icon = f"https://raw.githubusercontent.com/{repo}/main/AttendSmartly/Assets.xcassets/AppIcon.appiconset/AppIcon.png"
+          repo, build_tag, run, size, previous_path = sys.argv[1:6]
+          size = int(size)
+          raw = f"https://raw.githubusercontent.com/{repo}/main"
+          meta = Path(".github/sidestore")
+
+          def read(name, fallback=""):
+              path = meta / name
+              return path.read_text(encoding="utf-8").strip() if path.exists() else fallback
+
+          icon = f"{raw}/AttendSmartly/Assets.xcassets/AppIcon.appiconset/AppIcon.png"
+          screenshots = [
+              {"imageURL": f"{raw}/docs/screenshots/{name}.png", "width": 600, "height": 1304}
+              for name in ("home", "today", "subjects")
+          ]
+          now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
           version = {
               "version": f"1.0.{run}",
               "buildVersion": run,
-              "date": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-              "localizedDescription": f"Build {run} from GitHub Actions.",
-              "downloadURL": f"{base}/AttendSmartly.ipa",
+              "date": now,
+              "localizedDescription": read("whats-new.md", "Bug fixes and improvements."),
+              "downloadURL": f"https://github.com/{repo}/releases/download/{build_tag}/AttendSmartly.ipa",
               "size": size,
               "minOSVersion": "17.0",
           }
+
+          # Keep the last few builds that still have their own download page.
+          try:
+              previous = json.loads(Path(previous_path).read_text(encoding="utf-8"))
+              old_versions = previous["apps"][0].get("versions", [])
+          except Exception:
+              old_versions = []
+          history = [
+              v for v in old_versions
+              if "/ios-build-" in v.get("downloadURL", "") and v.get("buildVersion") != run
+          ]
+          versions = ([version] + history)[:5]
+
+          try:
+              news = json.loads(read("news.json", "[]"))
+          except json.JSONDecodeError:
+              news = []
+
           source = {
               "name": "AttendSmartly",
               "identifier": "com.agupta07505.attendsmartly.source",
-              "subtitle": "Personal builds of AttendSmartly",
+              "subtitle": "Personal builds of AttendSmartly for iOS",
+              "description": "Official builds of AttendSmartly for iOS, published automatically from GitHub.",
               "iconURL": icon,
+              "headerURL": f"{raw}/docs/sidestore/header.png",
+              "website": f"https://github.com/{repo}",
+              "tintColor": "#2E8569",
+              "featuredApps": ["com.agupta07505.attendsmartly"],
               "apps": [{
                   "name": "AttendSmartly",
                   "bundleIdentifier": "com.agupta07505.attendsmartly",
                   "developerName": "Marshal",
                   "subtitle": "Track classes. Plan bunks. Attend smartly.",
-                  "localizedDescription": "College attendance tracker.",
+                  "localizedDescription": read("about.md", "College attendance tracker."),
                   "iconURL": icon,
                   "tintColor": "#2E8569",
+                  "category": "utilities",
+                  "screenshots": screenshots,
+                  "screenshotURLs": [s["imageURL"] for s in screenshots],
                   "version": version["version"],
                   "versionDate": version["date"],
+                  "versionDescription": version["localizedDescription"],
                   "downloadURL": version["downloadURL"],
                   "size": size,
-                  "versions": [version],
+                  "versions": versions,
               }],
-              "news": [],
+              "news": news,
           }
-          print(json.dumps(source, indent=2))
+          print(json.dumps(source, indent=2, ensure_ascii=False))
           PY
 
           # 1. This build's own release with its IPA (must exist before the source points at it).

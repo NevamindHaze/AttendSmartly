@@ -1,0 +1,22 @@
+[
+  {
+    "identifier": "widgets-and-scan-2026-10",
+    "title": "Widgets, subject pages and timetable scan",
+    "caption": "Add AttendSmartly to your Home Screen or Lock Screen, tap a subject for its calendar, and scan your timetable from a photo.",
+    "date": "2026-10-26",
+    "tintColor": "#2E8569",
+    "imageURL": "https://raw.githubusercontent.com/NevamindHaze/AttendSmartly/main/docs/sidestore/header.png",
+    "appID": "com.agupta07505.attendsmartly",
+    "notify": false
+  },
+  {
+    "identifier": "pastel-redesign-2026-10",
+    "title": "A brand-new look",
+    "caption": "Soft pastel tiles by day and deep jewel tones by night, with your name and photo on the Home screen.",
+    "date": "2026-10-26",
+    "tintColor": "#7C6BD6",
+    "imageURL": "https://raw.githubusercontent.com/NevamindHaze/AttendSmartly/main/docs/screenshots/home.png",
+    "appID": "com.agupta07505.attendsmartly",
+    "notify": false
+  }
+]

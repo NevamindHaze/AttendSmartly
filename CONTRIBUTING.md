@@ -21,3 +21,13 @@ Open an [issue](https://github.com/NevamindHaze/AttendSmartly/issues/new/choose)
 - Keep backups compatible with the Android AttendSmartly format.
 
 By contributing, you agree that your contributions are licensed under the [GPL-3.0](LICENSE).
+
+## Releasing
+
+Every push to `main` that builds successfully is published to the SideStore source. The store listing comes from `.github/sidestore/`:
+
+- `about.md`: the app description
+- `whats-new.md`: notes for the next build; update it with each user-facing change
+- `news.json`: posts for SideStore's News tab
+
+Screenshots live in `docs/screenshots/` and the source banner in `docs/sidestore/header.png`.
