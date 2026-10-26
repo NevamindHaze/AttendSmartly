@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 import UniformTypeIdentifiers
+import PhotosUI
 
 struct SettingsView: View {
     @Environment(\.modelContext) private var context
@@ -13,6 +14,10 @@ struct SettingsView: View {
     @AppStorage(PrefKey.semesterStart) private var semesterStart = ""
     @AppStorage(PrefKey.semesterEnd) private var semesterEnd = ""
     @AppStorage(PrefKey.remindersEnabled) private var remindersEnabled = false
+    @AppStorage(PrefKey.userName) private var userName = "Marshal"
+    @AppStorage(PrefKey.profilePhotoVersion) private var photoVersion = 0
+
+    @State private var photoItem: PhotosPickerItem?
 
     @State private var showImporter = false
     @State private var showExporter = false
@@ -24,6 +29,33 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             Form {
+                Section("Profile") {
+                    HStack(spacing: 16) {
+                        AvatarView(size: 72)
+                        VStack(alignment: .leading, spacing: 8) {
+                            TextField("Your name", text: $userName)
+                                .font(.headline)
+                                .textInputAutocapitalization(.words)
+                            PhotosPicker(selection: $photoItem, matching: .images) {
+                                Label(hasPhoto ? "Change photo" : "Add a photo", systemImage: "photo.on.rectangle")
+                                    .font(.subheadline)
+                            }
+                            .buttonStyle(.borderless)
+                            if hasPhoto {
+                                Button(role: .destructive) {
+                                    ProfileStore.remove()
+                                    photoVersion += 1
+                                } label: {
+                                    Label("Remove photo", systemImage: "trash")
+                                        .font(.subheadline)
+                                }
+                                .buttonStyle(.borderless)
+                            }
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+
                 Section("Your data") {
                     LabeledContent("Subjects", value: "\(subjects.count)")
                     LabeledContent("Attendance sessions", value: "\(sessions.count)")
@@ -92,6 +124,20 @@ struct SettingsView: View {
                     Button("Done") { dismiss() }
                 }
             }
+            .onChange(of: photoItem) { _, item in
+                guard let item else { return }
+                Task { @MainActor in
+                    do {
+                        if let data = try await item.loadTransferable(type: Data.self) {
+                            try ProfileStore.save(data)
+                            photoVersion += 1
+                        }
+                    } catch {
+                        message = "Couldn't use that photo. Try a different one."
+                    }
+                    photoItem = nil
+                }
+            }
             .onChange(of: remindersEnabled) { _, isOn in
                 guard isOn else { return }
                 Task { @MainActor in
@@ -140,6 +186,10 @@ struct SettingsView: View {
                 Text(message ?? "")
             }
         }
+    }
+
+    private var hasPhoto: Bool {
+        photoVersion >= 0 && ProfileStore.load() != nil
     }
 
     // MARK: Semester date helpers (stored as yyyy-MM-dd strings; empty = not set)

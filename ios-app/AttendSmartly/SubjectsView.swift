@@ -38,6 +38,14 @@ struct SubjectsView: View {
                                 SubjectRow(subject: subject, semester: semester)
                             }
                             .buttonStyle(.plain)
+                            .listRowSeparator(.hidden)
+                            .listRowInsets(EdgeInsets(top: 18, leading: 32, bottom: 18, trailing: 32))
+                            .listRowBackground(
+                                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                                    .fill(Pastel.subject(subject.colorValue))
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 6)
+                            )
                             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                 Button(role: .destructive) {
                                     subjectToDelete = subject
@@ -56,9 +64,11 @@ struct SubjectsView: View {
                             }
                         }
                     }
-                    .listStyle(.insetGrouped)
+                    .listStyle(.plain)
+                    .scrollContentBackground(.hidden)
                 }
             }
+            .background(Pastel.background)
             .navigationTitle(showingArchived ? "Archived" : "Subjects")
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -139,45 +149,60 @@ private struct SubjectRow: View {
                 .flatMap { $0.units.map { $0.status } },
             target: subject.targetPercentage
         )
-        let tint = attendanceTint(summary)
         let hasData = summary.conducted > 0
         let meta = [subject.code, subject.type, subject.teacherName].filter { !$0.isEmpty }.joined(separator: "  ")
+        let progress = hasData ? min(max(summary.percentage, 0), 100) / 100 : 0
 
-        HStack(spacing: 14) {
-            ProgressRing(
-                value: hasData ? summary.percentage : 0,
-                target: hasData ? summary.target : nil,
-                tint: tint,
-                lineWidth: 5
-            ) {
-                Text(hasData ? "\(Int(summary.percentage.rounded()))" : "–")
-                    .font(.system(.subheadline, design: .rounded).weight(.bold))
-                    .foregroundStyle(tint)
-                    .monospacedDigit()
-            }
-            .frame(width: 54, height: 54)
-
-            VStack(alignment: .leading, spacing: 3) {
-                HStack(spacing: 7) {
-                    Circle()
-                        .fill(Color(argb: subject.colorValue))
-                        .frame(width: 9, height: 9)
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
                     Text(subject.name)
-                        .font(.headline)
+                        .font(.system(.headline, design: .rounded).weight(.bold))
+                        .foregroundStyle(Pastel.ink)
                         .lineLimit(2)
+                    if !meta.isEmpty {
+                        Text(meta)
+                            .font(.caption.weight(.medium))
+                            .foregroundStyle(Pastel.ink.opacity(0.65))
+                    }
                 }
-                if !meta.isEmpty {
-                    Text(meta).font(.caption).foregroundStyle(.secondary)
+                Spacer(minLength: 8)
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text(hasData ? "\(Int(summary.percentage.rounded()))%" : "–")
+                        .font(.system(size: 30, weight: .heavy, design: .rounded))
+                        .foregroundStyle(Pastel.ink)
+                        .monospacedDigit()
+                    if hasData {
+                        Circle()
+                            .fill(attendanceTint(summary))
+                            .frame(width: 10, height: 10)
+                            .overlay(Circle().strokeBorder(Pastel.surface, lineWidth: 1.5))
+                            .accessibilityLabel(attendanceLabel(summary))
+                    }
                 }
-                Text(summary.message)
-                    .font(.caption)
-                    .foregroundStyle(hasData ? tint : Color.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
             }
 
-            Spacer(minLength: 0)
+            if hasData {
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(Pastel.ink.opacity(0.12))
+                        Capsule()
+                            .fill(Pastel.ink.opacity(0.85))
+                            .frame(width: max(8, geo.size.width * progress))
+                        Capsule()
+                            .fill(Pastel.surface)
+                            .frame(width: 3, height: 16)
+                            .offset(x: geo.size.width * min(max(summary.target, 0), 100) / 100 - 1.5)
+                    }
+                }
+                .frame(height: 9)
+            }
+
+            Text(summary.message)
+                .font(.footnote.weight(.medium))
+                .foregroundStyle(Pastel.ink.opacity(0.75))
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(.vertical, 6)
         .contentShape(Rectangle())
     }
 }

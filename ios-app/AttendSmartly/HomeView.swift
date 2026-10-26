@@ -30,6 +30,12 @@ struct HomeView: View {
     @State private var selectedDate = Date()
     @State private var rescheduleRow: TodayClass?
     @State private var errorText: String?
+    @AppStorage(PrefKey.userName) private var userName = "Marshal"
+
+    private var displayName: String {
+        let name = userName.trimmingCharacters(in: .whitespacesAndNewlines)
+        return name.isEmpty ? "there" : name
+    }
 
     private var semester: SemesterRange {
         SemesterRange(enabled: semesterEnabled, start: semesterStart, end: semesterEnd)
@@ -41,32 +47,55 @@ struct HomeView: View {
         let holiday = holidays.first { $0.date == todayStr }
         let rows = holiday == nil ? scheduleRows(on: selectedDate) : []
         let summary = overallSummary()
+        let dayWord = selectedIsToday ? "today" : "this day"
+        let classCountLabel = (rows.count == 1 ? "class\n" : "classes\n") + dayWord
 
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    HStack {
-                        Label(DateUtils.longDate(selectedDate), systemImage: "calendar")
-                            .foregroundStyle(.secondary)
-                        Spacer()
+                VStack(alignment: .leading, spacing: 18) {
+                    HStack(spacing: 12) {
+                        Button { showSettings = true } label: { AvatarView(size: 50) }
+                            .buttonStyle(.plain)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Hi, \(displayName)")
+                                .font(.system(.title2, design: .rounded).weight(.bold))
+                                .foregroundStyle(Pastel.ink)
+                            Text(DateUtils.longDate(selectedDate))
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer(minLength: 0)
                         if !selectedIsToday {
                             Button("Today") {
                                 selectedDate = Calendar.current.startOfDay(for: Date())
                             }
-                            .font(.caption.bold())
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(Pastel.ink)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 7)
+                            .background(Pastel.surface, in: Capsule())
                             .accessibilityLabel("Return to today")
                         }
                     }
 
                     HeroCard(summary: summary, semesterOn: semesterEnabled)
 
-                    HStack {
-                        Text(selectedIsToday ? "Today" : "Classes").font(.title2.bold())
-                        Spacer()
-                        Text(rows.count == 1 ? "1 class" : "\(rows.count) classes")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                    HStack(spacing: 12) {
+                        if summary.conducted > 0 && summary.percentage < summary.target && summary.requiredUnits != Int.max {
+                            QuickTile(value: "\(summary.requiredUnits)", label: "classes to attend\nto reach your goal",
+                                      symbol: "arrow.up.right", color: Pastel.peach)
+                        } else {
+                            QuickTile(value: "\(summary.safeBunks)", label: "classes you can\nsafely miss",
+                                      symbol: "cup.and.saucer.fill", color: Pastel.sky)
+                        }
+                        QuickTile(value: "\(rows.count)", label: classCountLabel,
+                                  symbol: "book.fill", color: Pastel.lavender)
                     }
+
+                    Text(selectedIsToday ? "Today's classes" : "Classes")
+                        .font(.system(.title3, design: .rounded).weight(.bold))
+                        .foregroundStyle(Pastel.ink)
+                        .padding(.top, 4)
 
                     if let holiday {
                         infoBox(
@@ -102,8 +131,9 @@ struct HomeView: View {
                 }
                 .padding()
             }
-            .background(Color(uiColor: .systemGroupedBackground))
-            .navigationTitle("AttendSmartly")
+            .background(Pastel.background)
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button { showExtra = true } label: { Image(systemName: "plus.circle") }
@@ -292,7 +322,36 @@ struct HomeView: View {
 
     private func infoBox(symbol: String, title: String, text: String) -> some View {
         EmptyStateView(symbol: symbol, title: title, message: text)
-            .cardStyle(20)
+            .tile(Pastel.surface)
+    }
+}
+
+private struct QuickTile: View {
+    let value: String
+    let label: String
+    let symbol: String
+    let color: Color
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Image(systemName: symbol)
+                .font(.subheadline.weight(.bold))
+                .foregroundStyle(Pastel.ink)
+                .frame(width: 34, height: 34)
+                .background(Pastel.surface.opacity(0.75), in: Circle())
+            Text(value)
+                .font(.system(size: 34, weight: .heavy, design: .rounded))
+                .foregroundStyle(Pastel.ink)
+                .monospacedDigit()
+                .contentTransition(.numericText())
+            Text(label)
+                .font(.caption.weight(.medium))
+                .foregroundStyle(Pastel.ink.opacity(0.7))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .tile(color, radius: 26)
     }
 }
 
@@ -301,62 +360,78 @@ private struct HeroCard: View {
     let semesterOn: Bool
 
     var body: some View {
-        let tint = attendanceTint(summary)
         let hasData = summary.conducted > 0
+        let progress = hasData ? min(max(summary.percentage, 0), 100) / 100 : 0
+        let goal = min(max(summary.target, 0), 100) / 100
 
-        VStack(alignment: .leading, spacing: 18) {
-            HStack(spacing: 22) {
-                ProgressRing(
-                    value: hasData ? summary.percentage : 0,
-                    target: hasData ? summary.target : nil,
-                    tint: tint,
-                    lineWidth: 14
-                ) {
-                    VStack(spacing: 0) {
-                        Text(hasData ? "\(Int(summary.percentage.rounded()))%" : "–")
-                            .font(.system(size: 38, weight: .bold, design: .rounded))
-                            .foregroundStyle(tint)
-                            .contentTransition(.numericText())
-                            .animation(.snappy, value: summary.percentage)
-                        Text("goal \(Int(summary.target.rounded()))%")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                .frame(width: 148, height: 148)
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Text(semesterOn ? "This semester" : "Overall attendance")
+                    .font(.headline)
+                    .foregroundStyle(Pastel.ink)
+                Spacer()
+                TilePill(text: attendanceLabel(summary))
+            }
 
-                VStack(alignment: .leading, spacing: 10) {
-                    StatusPill(text: attendanceLabel(summary), tint: tint)
-                    stat("Present", summary.present, DashboardPalette.green)
-                    stat("Absent", summary.absent, DashboardPalette.coral)
-                    stat("Cancelled", summary.cancelled, DashboardPalette.blue)
+            HStack(alignment: .lastTextBaseline, spacing: 8) {
+                Text(hasData ? "\(Int(summary.percentage.rounded()))%" : "–")
+                    .font(.system(size: 68, weight: .heavy, design: .rounded))
+                    .foregroundStyle(Pastel.ink)
+                    .contentTransition(.numericText())
+                    .animation(.snappy, value: summary.percentage)
+                Text("goal \(Int(summary.target.rounded()))%")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Pastel.ink.opacity(0.6))
+            }
+
+            // Chunky progress bar with a marker at the goal.
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Pastel.ink.opacity(0.12))
+                    Capsule()
+                        .fill(Pastel.ink)
+                        .frame(width: max(14, geo.size.width * progress))
+                        .animation(.spring(response: 0.6, dampingFraction: 0.85), value: progress)
+                    Capsule()
+                        .fill(Pastel.surface)
+                        .frame(width: 4, height: 22)
+                        .overlay(Capsule().strokeBorder(Pastel.ink.opacity(0.5), lineWidth: 1))
+                        .offset(x: geo.size.width * goal - 2)
                 }
+            }
+            .frame(height: 14)
+
+            HStack(spacing: 8) {
+                countChip(summary.present, "present", "checkmark")
+                countChip(summary.absent, "absent", "xmark")
+                countChip(summary.cancelled, "cancelled", "slash.circle")
             }
 
             Text(summary.message)
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Pastel.ink.opacity(0.75))
                 .fixedSize(horizontal: false, vertical: true)
-
-            Text(semesterOn ? "Counting this semester only" : "Counting all recorded classes")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
         }
         .padding(20)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .cardStyle(26)
+        .tile(Pastel.status(summary), radius: 32)
     }
 
-    private func stat(_ title: String, _ value: Int, _ tint: Color) -> some View {
-        HStack(spacing: 8) {
-            Circle().fill(tint).frame(width: 8, height: 8)
+    private func countChip(_ value: Int, _ title: String, _ symbol: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
             Text("\(value)")
-                .font(.system(.body, design: .rounded).weight(.semibold))
+                .font(.system(.title3, design: .rounded).weight(.bold))
                 .monospacedDigit()
-            Text(title)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+            Label(title, systemImage: symbol)
+                .font(.caption2.weight(.semibold))
+                .labelStyle(.titleAndIcon)
+                .opacity(0.7)
         }
+        .foregroundStyle(Pastel.ink)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 9)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Pastel.surface.opacity(0.6), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 }
 
@@ -369,43 +444,34 @@ private struct ClassCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text(DateUtils.displayTime(row.start))
-                        .font(.subheadline.weight(.semibold))
-                        .monospacedDigit()
-                    Text(DateUtils.displayTime(row.end))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .monospacedDigit()
-                }
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-                .frame(width: 68, alignment: .trailing)
-
-                RoundedRectangle(cornerRadius: 2, style: .continuous)
-                    .fill(Color(argb: row.subject.colorValue))
-                    .frame(width: 4)
-
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(row.subject.name).font(.headline)
-                    let detail = [row.subject.code, row.room].filter { !$0.isEmpty }.joined(separator: "  ")
-                    if !detail.isEmpty {
-                        Text(detail).font(.subheadline).foregroundStyle(.secondary)
-                    }
-                }
-
-                Spacer(minLength: 0)
-
+            HStack {
+                TilePill(
+                    text: "\(DateUtils.displayTime(row.start)) – \(DateUtils.displayTime(row.end))",
+                    symbol: "clock"
+                )
+                Spacer()
                 Menu {
                     Button("Reschedule…", systemImage: "calendar.badge.clock", action: onReschedule)
                     Button("Cancel class", systemImage: "xmark.circle", role: .destructive, action: onCancel)
                 } label: {
                     Image(systemName: "ellipsis")
-                        .font(.body.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .frame(width: 32, height: 32)
-                        .contentShape(Rectangle())
+                        .font(.body.weight(.bold))
+                        .foregroundStyle(Pastel.ink)
+                        .frame(width: 34, height: 34)
+                        .background(Pastel.surface.opacity(0.75), in: Circle())
+                }
+                .accessibilityLabel("Class options")
+            }
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(row.subject.name)
+                    .font(.system(.title3, design: .rounded).weight(.bold))
+                    .foregroundStyle(Pastel.ink)
+                let detail = [row.subject.code, row.room].filter { !$0.isEmpty }.joined(separator: "  ")
+                if !detail.isEmpty {
+                    Label(detail, systemImage: "mappin.and.ellipse")
+                        .font(.subheadline)
+                        .foregroundStyle(Pastel.ink.opacity(0.7))
                 }
             }
 
@@ -414,8 +480,8 @@ private struct ClassCard: View {
                     HStack(spacing: 8) {
                         if row.expectedUnits > 1 {
                             Text("Unit \(index + 1)")
-                                .font(.caption.weight(.medium))
-                                .foregroundStyle(.secondary)
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(Pastel.ink.opacity(0.7))
                                 .frame(width: 42, alignment: .leading)
                         }
                         choice("Present", "checkmark", .present, index, DashboardPalette.green)
@@ -425,8 +491,8 @@ private struct ClassCard: View {
                 }
             }
         }
-        .padding(16)
-        .cardStyle(20)
+        .padding(18)
+        .tile(Pastel.subject(row.subject.colorValue), radius: 28)
     }
 
     private func choice(_ title: String, _ symbol: String, _ status: AttendanceStatus, _ index: Int, _ tint: Color) -> some View {
@@ -435,16 +501,13 @@ private struct ClassCard: View {
             onSet(index, selected ? .unmarked : status)
         } label: {
             Label(title, systemImage: symbol)
-                .font(.footnote.weight(.semibold))
+                .font(.footnote.weight(.bold))
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 10)
-                .background(
-                    selected ? tint : tint.opacity(0.10),
-                    in: RoundedRectangle(cornerRadius: 12, style: .continuous)
-                )
-                .foregroundStyle(selected ? Color.white : tint)
+                .padding(.vertical, 11)
+                .background(selected ? tint : Pastel.surface.opacity(0.75), in: Capsule())
+                .foregroundStyle(selected ? Color.white : Pastel.ink)
         }
         .buttonStyle(.plain)
         .animation(.snappy(duration: 0.2), value: selected)
