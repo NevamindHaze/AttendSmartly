@@ -9,6 +9,7 @@ struct SubjectsView: View {
     @State private var formSubject: Subject?
     @State private var showingForm = false
     @State private var subjectToDelete: Subject?
+    @State private var detailSubject: Subject?
     @State private var errorText: String?
 
     @AppStorage(PrefKey.semesterEnabled) private var semesterEnabled = false
@@ -32,12 +33,21 @@ struct SubjectsView: View {
                     List {
                         ForEach(visible) { subject in
                             Button {
-                                formSubject = subject
-                                showingForm = true
+                                detailSubject = subject
                             } label: {
                                 SubjectRow(subject: subject, semester: semester)
                             }
                             .buttonStyle(.plain)
+                            .contextMenu {
+                                Button("Edit", systemImage: "pencil") {
+                                    formSubject = subject
+                                    showingForm = true
+                                }
+                                Button(subject.isArchived ? "Unarchive" : "Archive",
+                                       systemImage: subject.isArchived ? "tray.and.arrow.up" : "archivebox") {
+                                    toggleArchive(subject)
+                                }
+                            }
                             .pastelRow(Pastel.subject(subject.colorValue))
                             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                 Button(role: .destructive) {
@@ -78,6 +88,9 @@ struct SubjectsView: View {
                         Label("Add Subject", systemImage: "plus")
                     }
                 }
+            }
+            .navigationDestination(item: $detailSubject) { subject in
+                SubjectDetailView(subject: subject)
             }
             .sheet(isPresented: $showingForm, onDismiss: { formSubject = nil }) {
                 SubjectFormView(subject: formSubject)

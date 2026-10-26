@@ -104,6 +104,8 @@ enum DateUtils {
 // MARK: - Root
 
 struct ContentView: View {
+    @Environment(\.modelContext) private var context
+    @Environment(\.scenePhase) private var scenePhase
     @Query private var entries: [TimetableEntry]
     @AppStorage(PrefKey.remindersEnabled) private var remindersEnabled = false
 
@@ -142,6 +144,16 @@ struct ContentView: View {
         .task(id: reminderSignature) { @MainActor in
             let items = ReminderService.items(from: entries)
             await ReminderService.reschedule(items: items, enabled: remindersEnabled)
+        }
+        .onChange(of: scenePhase, initial: true) { _, phase in
+            switch phase {
+            case .active:
+                AutoBackup.runIfDue(context)
+            case .background:
+                WidgetSnapshotWriter.update(context)
+            default:
+                break
+            }
         }
     }
 

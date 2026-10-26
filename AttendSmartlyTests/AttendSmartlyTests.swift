@@ -1,5 +1,6 @@
 import XCTest
 import SwiftData
+import CoreGraphics
 @testable import AttendSmartly
 
 final class AttendSmartlyTests: XCTestCase {
@@ -137,6 +138,110 @@ final class AttendSmartlyTests: XCTestCase {
         XCTAssertEqual(try context.fetch(FetchDescriptor<AttendanceSession>()).count, 1)
         XCTAssertEqual(try context.fetch(FetchDescriptor<AttendanceUnit>()).count, 2)
         XCTAssertEqual(try context.fetch(FetchDescriptor<Holiday>()).count, 1)
+    }
+
+    // MARK: Timetable scanner
+
+    func testScannerReadsCommonTimeFormats() {
+        XCTAssertEqual(TimetableScanner.timeRange("9:00-10:00")?.0, "09:00")
+        XCTAssertEqual(TimetableScanner.timeRange("9:00-10:00")?.1, "10:00")
+        XCTAssertEqual(TimetableScanner.timeRange("2-4 pm")?.0, "14:00")
+        XCTAssertEqual(TimetableScanner.timeRange("2-4 pm")?.1, "16:00")
+        XCTAssertEqual(TimetableScanner.timeRange("11-1 pm")?.0, "11:00")
+        XCTAssertEqual(TimetableScanner.timeRange("11-1 pm")?.1, "13:00")
+        XCTAssertEqual(TimetableScanner.timeRange("11 am to 1 pm")?.1, "13:00")
+        XCTAssertEqual(TimetableScanner.timeRange("09.00 – 10.00")?.0, "09:00")
+        XCTAssertEqual(TimetableScanner.timeRange("4-6")?.0, "16:00")
+        XCTAssertNil(TimetableScanner.timeRange("Anatomy"))
+        XCTAssertEqual(TimetableScanner.dayIndex("Thurs"), 4)
+        XCTAssertEqual(TimetableScanner.dayIndex("SUNDAY"), 7)
+        XCTAssertNil(TimetableScanner.dayIndex("Monsoon"))
+    }
+
+    func testScannerReadsGridWithDaysDownTheSide() {
+        func t(_ text: String, _ x: CGFloat, _ y: CGFloat, _ w: CGFloat, _ h: CGFloat) -> ScannedText {
+            ScannedText(text: text, box: CGRect(x: x, y: y, width: w, height: h))
+        }
+        let slots = ["9:00-10:00", "10:00-11:00", "11-12", "2-4 pm"]
+        var items = [t("Day", 0.02, 0.05, 0.1, 0.03)]
+        for (i, slot) in slots.enumerated() {
+            items.append(t(slot, 0.16 + CGFloat(i) * 0.2, 0.05, 0.18, 0.03))
+        }
+        items += [
+            t("Monday", 0.02, 0.20, 0.12, 0.03),
+            t("Tuesday", 0.02, 0.40, 0.12, 0.03),
+            t("Anatomy", 0.18, 0.20, 0.12, 0.03),
+            t("LH-1", 0.18, 0.24, 0.08, 0.02),
+            t("Physiology", 0.38, 0.20, 0.14, 0.03),
+            t("Surgery Lab", 0.56, 0.40, 0.34, 0.03),
+            t("Lunch", 0.78, 0.20, 0.1, 0.03),
+        ]
+
+        let found = TimetableScanner.parse(items)
+        XCTAssertEqual(found, [
+            ScannedClass(day: 1, start: "09:00", end: "10:00", name: "Anatomy"),
+            ScannedClass(day: 1, start: "10:00", end: "11:00", name: "Physiology"),
+            ScannedClass(day: 2, start: "11:00", end: "16:00", name: "Surgery Lab"),
+        ])
+    }
+
+    func testScannerReadsGridWithDaysAcrossTheTopAndMergesDoubleSlots() {
+        func t(_ text: String, _ x: CGFloat, _ y: CGFloat, _ w: CGFloat, _ h: CGFloat) -> ScannedText {
+            ScannedText(text: text, box: CGRect(x: x, y: y, width: w, height: h))
+        }
+        var items = [t("Time", 0.02, 0.02, 0.1, 0.03)]
+        for (i, day) in ["Mon", "Tue", "Wed"].enumerated() {
+            items.append(t(day, 0.2 + CGFloat(i) * 0.2, 0.02, 0.1, 0.03))
+        }
+        for (i, slot) in ["9.00-10.00", "10.00-11.00", "1.00-2.00"].enumerated() {
+            items.append(t(slot, 0.02, 0.12 + CGFloat(i) * 0.1, 0.14, 0.03))
+        }
+        items += [
+            t("VSR Lab", 0.2, 0.12, 0.12, 0.03),
+            t("VSR Lab", 0.2, 0.22, 0.12, 0.03),
+            t("VMD Theory", 0.4, 0.32, 0.15, 0.03),
+            t("Pharmacology", 0.6, 0.12, 0.15, 0.03),
+        ]
+
+        let found = TimetableScanner.parse(items)
+        XCTAssertEqual(found, [
+            ScannedClass(day: 1, start: "09:00", end: "11:00", name: "VSR Lab"),
+            ScannedClass(day: 2, start: "13:00", end: "14:00", name: "VMD Theory"),
+            ScannedClass(day: 3, start: "09:00", end: "10:00", name: "Pharmacology"),
+        ])
+    }
+
+    func testScannerReadsSingleLineList() {
+        let items = [
+            ScannedText(text: "Monday 9:00-10:00 Anatomy", box: CGRect(x: 0.1, y: 0.1, width: 0.6, height: 0.03)),
+            ScannedText(text: "Friday 2-4 pm Surgery Lab", box: CGRect(x: 0.1, y: 0.2, width: 0.6, height: 0.03)),
+        ]
+        XCTAssertEqual(TimetableScanner.parse(items), [
+            ScannedClass(day: 1, start: "09:00", end: "10:00", name: "Anatomy"),
+            ScannedClass(day: 5, start: "14:00", end: "16:00", name: "Surgery Lab"),
+        ])
+    }
+
+    // MARK: Widget snapshot
+
+    func testWidgetSnapshotPicksTodaysClassesAndRespectsHolidays() throws {
+        let monday = try XCTUnwrap(DateUtils.date(fromISO: "2026-10-26"))
+        let item = WidgetSnapshot.ClassItem(
+            weekday: 1, date: nil, startTime: "09:00", endTime: "10:00", name: "Anatomy",
+            room: "", colorARGB: 0, startDate: "", endDate: ""
+        )
+        var snapshot = WidgetSnapshot(
+            generatedAt: monday, userName: "Marshal", percentage: 80, target: 75, present: 8, conducted: 10,
+            message: "", classes: [item], holidays: [:], skipped: []
+        )
+        XCTAssertEqual(snapshot.classes(on: monday).map(\.name), ["Anatomy"])
+
+        snapshot.skipped = ["2026-10-26|09:00|Anatomy"]
+        XCTAssertTrue(snapshot.classes(on: monday).isEmpty)
+
+        snapshot.skipped = []
+        snapshot.holidays = ["2026-10-26": "Diwali"]
+        XCTAssertTrue(snapshot.classes(on: monday).isEmpty)
     }
 
     func testInvalidBackupIsRejected() throws {

@@ -18,6 +18,8 @@ struct SettingsView: View {
     @AppStorage(PrefKey.profilePhotoVersion) private var photoVersion = 0
 
     @State private var photoItem: PhotosPickerItem?
+    @AppStorage(PrefKey.autoBackupEnabled) private var autoBackupEnabled = true
+    @AppStorage(PrefKey.lastAutoBackup) private var lastAutoBackup: Double = 0
 
     @State private var showImporter = false
     @State private var showExporter = false
@@ -107,6 +109,27 @@ struct SettingsView: View {
                     Text("Backup")
                 } footer: {
                     Text("Works with backups exported from the Android app, and exports in the same format.")
+                }
+
+                Section {
+                    Toggle("Weekly automatic backup", isOn: $autoBackupEnabled)
+                    LabeledContent("Last backup", value: lastAutoBackup > 0
+                        ? Date(timeIntervalSince1970: lastAutoBackup).formatted(date: .abbreviated, time: .shortened)
+                        : "Not yet")
+                    Button {
+                        do {
+                            try AutoBackup.runNow(context)
+                            message = "Backup saved. Find it in the Files app under On My iPhone > AttendSmartly > Backups."
+                        } catch {
+                            message = "Couldn't save the backup: \(error.localizedDescription)"
+                        }
+                    } label: {
+                        Label("Back up now", systemImage: "externaldrive.badge.checkmark")
+                    }
+                } header: {
+                    Text("Automatic backup")
+                } footer: {
+                    Text("Saved once a week to Files > On My iPhone > AttendSmartly > Backups. The newest \(AutoBackup.keep) are kept. These live inside the app, so copy one to iCloud Drive now and then: deleting the app deletes them too.")
                 }
 
                 Section {

@@ -6,12 +6,14 @@ on:
       - "AttendSmartly/**"
       - "AttendSmartly.xcodeproj/**"
       - "AttendSmartlyTests/**"
+      - "AttendSmartlyWidget/**"
       - ".github/workflows/ios-build.yml"
   pull_request:
     paths:
       - "AttendSmartly/**"
       - "AttendSmartly.xcodeproj/**"
       - "AttendSmartlyTests/**"
+      - "AttendSmartlyWidget/**"
       - ".github/workflows/ios-build.yml"
   workflow_dispatch:
 
@@ -167,6 +169,18 @@ jobs:
           app_path="$RUNNER_TEMP/AttendSmartlyDeviceDerivedData/Build/Products/Debug-iphoneos/AttendSmartly.app"
           mkdir -p "$package_path/Payload"
           cp -R "$app_path" "$package_path/Payload/AttendSmartly.app"
+
+          # Ad-hoc sign the widget and the app with their entitlements so that
+          # SideStore can see (and set up) the App Group they share.
+          app="$package_path/Payload/AttendSmartly.app"
+          widget="$app/PlugIns/AttendSmartlyWidget.appex"
+          if [ -d "$widget" ]; then
+            codesign --force --sign - --timestamp=none \
+              --entitlements AttendSmartlyWidget/AttendSmartlyWidget.entitlements "$widget"
+          fi
+          codesign --force --sign - --timestamp=none \
+            --entitlements AttendSmartly/AttendSmartly.entitlements "$app"
+          codesign -d --entitlements - "$app" || true
           (
             cd "$package_path"
             /usr/bin/ditto -c -k --sequesterRsrc --keepParent Payload "$RUNNER_TEMP/AttendSmartly.ipa"

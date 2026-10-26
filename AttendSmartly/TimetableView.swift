@@ -10,6 +10,7 @@ struct TimetableView: View {
     @State private var showAllEntries = false
     @State private var formEntry: TimetableEntry?
     @State private var showForm = false
+    @State private var showScan = false
     @State private var errorText: String?
 
     private static let dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
@@ -89,15 +90,25 @@ struct TimetableView: View {
             .navigationTitle("Timetable")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        formEntry = nil
-                        showForm = true
+                    Menu {
+                        Button {
+                            formEntry = nil
+                            showForm = true
+                        } label: {
+                            Label("Add a class", systemImage: "plus")
+                        }
+                        .disabled(subjects.filter { !$0.isArchived }.isEmpty)
+                        Button {
+                            showScan = true
+                        } label: {
+                            Label("Scan a timetable photo", systemImage: "text.viewfinder")
+                        }
                     } label: {
-                        Label("Add class", systemImage: "plus")
+                        Label("Add", systemImage: "plus")
                     }
-                    .disabled(subjects.filter { !$0.isArchived }.isEmpty)
                 }
             }
+            .sheet(isPresented: $showScan) { TimetableScanView() }
             .sheet(isPresented: $showForm, onDismiss: { formEntry = nil }) {
                 TimetableFormView(entry: formEntry, defaultDay: day)
             }
