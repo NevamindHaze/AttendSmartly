@@ -193,10 +193,12 @@ jobs:
           path: ${{ runner.temp }}/AttendSmartly.ipa
           if-no-files-found: error
 
-      # Publishes the newest IPA plus a SideStore source file to a fixed
-      # pre-release called "ios-latest". Add this URL in SideStore once:
+      # Each build gets its own pre-release ("ios-build-<n>") holding its IPA, and the
+      # fixed pre-release "ios-latest" holds the SideStore source file. Because the
+      # source points at that build's own IPA, a stale copy of the source still
+      # downloads the build it describes. Add this URL in SideStore once:
       # https://github.com/NevamindHaze/AttendSmartly/releases/download/ios-latest/source.json
-      # It is a pre-release, so it never becomes the repo's "Latest release".
+      # These are pre-releases, so they never become the repo's "Latest release".
       - name: Publish to SideStore source
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         shell: bash
@@ -208,9 +210,10 @@ jobs:
           set -euo pipefail
           ipa="$RUNNER_TEMP/AttendSmartly.ipa"
           tag="ios-latest"
+          build_tag="ios-build-$RUN_NUMBER"
           size=$(stat -f%z "$ipa")
 
-          python3 - "$REPO" "$tag" "$RUN_NUMBER" "$size" > "$RUNNER_TEMP/source.json" <<'PY'
+          python3 - "$REPO" "$build_tag" "$RUN_NUMBER" "$size" > "$RUNNER_TEMP/source.json" <<'PY'
           import json
           import sys
           from datetime import datetime, timezone
@@ -251,11 +254,30 @@ jobs:
           print(json.dumps(source, indent=2))
           PY
 
-          gh release delete "$tag" --repo "$REPO" --cleanup-tag --yes || true
-          gh release create "$tag" "$ipa" "$RUNNER_TEMP/source.json" \
+          # 1. This build's own release with its IPA (must exist before the source points at it).
+          gh release delete "$build_tag" --repo "$REPO" --cleanup-tag --yes 2>/dev/null || true
+          gh release create "$build_tag" "$ipa" \
             --repo "$REPO" \
             --target "$GITHUB_SHA" \
-            --title "AttendSmartly iOS (build $RUN_NUMBER)" \
+            --title "AttendSmartly iOS build $RUN_NUMBER" \
             --notes "Automatic iOS build $RUN_NUMBER. Install it through SideStore." \
             --prerelease \
             --latest=false
+
+          # 2. Update the source file in place, so its link never goes missing.
+          if ! gh release view "$tag" --repo "$REPO" > /dev/null 2>&1; then
+            gh release create "$tag" --repo "$REPO" --target "$GITHUB_SHA" \
+              --title "AttendSmartly iOS (SideStore source)" \
+              --notes "SideStore source for AttendSmartly." --prerelease --latest=false
+          fi
+          gh release upload "$tag" "$RUNNER_TEMP/source.json" "$ipa" --repo "$REPO" --clobber
+          gh release edit "$tag" --repo "$REPO" \
+            --title "AttendSmartly iOS (latest: build $RUN_NUMBER)" \
+            --notes "SideStore source for AttendSmartly. Latest build: $RUN_NUMBER."
+
+          # 3. Keep only the five newest per-build releases.
+          gh api "repos/$REPO/releases?per_page=100" --jq '.[].tag_name' \
+            | grep '^ios-build-' | sort -t- -k3 -n -r | tail -n +6 \
+            | while read -r old; do
+                gh release delete "$old" --repo "$REPO" --cleanup-tag --yes || true
+              done
