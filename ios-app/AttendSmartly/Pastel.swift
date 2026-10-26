@@ -106,3 +106,61 @@ struct TilePill: View {
         .background(Pastel.surface.opacity(0.75), in: Capsule())
     }
 }
+
+extension View {
+    /// Turns a List row into a coloured tile with space around it.
+    func pastelRow(_ color: Color) -> some View {
+        self
+            .listRowSeparator(.hidden)
+            .listRowInsets(EdgeInsets(top: 16, leading: 32, bottom: 16, trailing: 32))
+            .listRowBackground(
+                RoundedRectangle(cornerRadius: 26, style: .continuous)
+                    .fill(color)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 5)
+            )
+    }
+}
+
+/// Monday-to-Sunday picker with big rounded day chips and the date underneath.
+struct DayStrip: View {
+    @Binding var day: Int
+    var weekOf: Date = Date()
+
+    private static let names = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+
+    var body: some View {
+        let today = DateUtils.dayOfWeek(Date())
+        HStack(spacing: 6) {
+            ForEach(1...7, id: \.self) { d in
+                let date = DateUtils.date(forDayOfWeek: d, inWeekContaining: weekOf)
+                let selected = d == day
+                Button {
+                    withAnimation(.snappy) { day = d }
+                } label: {
+                    VStack(spacing: 4) {
+                        Text(Self.names[d - 1])
+                            .font(.caption2.weight(.semibold))
+                            .opacity(selected ? 0.85 : 0.6)
+                        Text("\(Calendar.current.component(.day, from: date))")
+                            .font(.system(.headline, design: .rounded).weight(.bold))
+                        Circle()
+                            .fill(d == today ? (selected ? Pastel.background : Pastel.ink) : .clear)
+                            .frame(width: 5, height: 5)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                    .foregroundStyle(selected ? Pastel.background : Pastel.ink)
+                    .background(
+                        selected ? Pastel.ink : Pastel.surface,
+                        in: RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    )
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("\(Self.names[d - 1]) \(DateUtils.prettyDate(DateUtils.isoString(date)))")
+                .accessibilityAddTraits(selected ? .isSelected : [])
+            }
+        }
+        .sensoryFeedback(.selection, trigger: day)
+    }
+}

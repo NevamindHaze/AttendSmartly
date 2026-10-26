@@ -38,14 +38,7 @@ struct SubjectsView: View {
                                 SubjectRow(subject: subject, semester: semester)
                             }
                             .buttonStyle(.plain)
-                            .listRowSeparator(.hidden)
-                            .listRowInsets(EdgeInsets(top: 18, leading: 32, bottom: 18, trailing: 32))
-                            .listRowBackground(
-                                RoundedRectangle(cornerRadius: 28, style: .continuous)
-                                    .fill(Pastel.subject(subject.colorValue))
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 6)
-                            )
+                            .pastelRow(Pastel.subject(subject.colorValue))
                             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                 Button(role: .destructive) {
                                     subjectToDelete = subject

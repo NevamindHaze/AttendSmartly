@@ -49,26 +49,38 @@ struct HistoryView: View {
                         title: "No records yet",
                         message: "Mark classes on Home, or tap + to add a past class."
                     )
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .tile(Pastel.surface)
+                    .padding()
+                    .frame(maxHeight: .infinity, alignment: .top)
                 } else {
                     List {
                         ForEach(dates, id: \.self) { date in
-                            Section(DateUtils.prettyDate(date)) {
+                            Section {
                                 ForEach((grouped[date] ?? []).sorted { $0.startTime < $1.startTime }) { session in
                                     Button { editing = session } label: { SessionRow(session: session) }
                                         .buttonStyle(.plain)
+                                        .pastelRow(Pastel.subject(session.subject?.colorValue ?? 0xFF607D8B))
                                         .swipeActions(edge: .trailing) {
                                             Button(role: .destructive) { toDelete = session } label: {
                                                 Label("Delete", systemImage: "trash")
                                             }
                                         }
                                 }
+                            } header: {
+                                Text(DateUtils.prettyDate(date))
+                                    .font(.system(.subheadline, design: .rounded).weight(.bold))
+                                    .foregroundStyle(Pastel.ink)
+                                    .textCase(nil)
+                                    .padding(.leading, 4)
                             }
+                            .listSectionSeparator(.hidden)
                         }
                     }
-                    .listStyle(.insetGrouped)
+                    .listStyle(.plain)
+                    .scrollContentBackground(.hidden)
                 }
             }
+            .background(Pastel.background)
             .navigationTitle("History")
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -124,28 +136,34 @@ private struct SessionRow: View {
 
     var body: some View {
         let count = max(session.expectedUnitCount, session.units.count)
-        HStack(spacing: 12) {
-            RoundedRectangle(cornerRadius: 3)
-                .fill(Color(argb: session.subject?.colorValue ?? 0xFF607D8B))
-                .frame(width: 5, height: 40)
-            VStack(alignment: .leading, spacing: 3) {
-                Text(session.subject?.name ?? "Unknown").font(.headline)
-                Text("\(DateUtils.displayTime(session.startTime)) – \(DateUtils.displayTime(session.endTime))")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(session.subject?.name ?? "Unknown")
+                    .font(.system(.headline, design: .rounded).weight(.bold))
+                Label(
+                    "\(DateUtils.displayTime(session.startTime)) – \(DateUtils.displayTime(session.endTime))",
+                    systemImage: "clock"
+                )
+                .font(.footnote)
+                .opacity(0.75)
+                if session.isRescheduled || session.notes == "Extra class" {
+                    TilePill(text: session.isRescheduled ? "Rescheduled" : "Extra class")
+                }
             }
-            Spacer()
-            VStack(alignment: .trailing, spacing: 3) {
+            Spacer(minLength: 8)
+            VStack(alignment: .trailing, spacing: 4) {
                 ForEach(0..<count, id: \.self) { index in
                     let status = session.units.first(where: { $0.unitIndex == index })?.status ?? .unmarked
                     Text(status.label)
-                        .font(.caption.bold())
-                        .padding(.horizontal, 8).padding(.vertical, 3)
-                        .background(status.tint.opacity(0.18), in: Capsule())
-                        .foregroundStyle(status.tint)
+                        .font(.caption.weight(.bold))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(status == .unmarked ? Pastel.surface.opacity(0.7) : status.tint, in: Capsule())
+                        .foregroundStyle(status == .unmarked ? Pastel.ink : Color.white)
                 }
             }
         }
+        .foregroundStyle(Pastel.ink)
         .contentShape(Rectangle())
     }
 }

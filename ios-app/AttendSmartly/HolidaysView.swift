@@ -39,6 +39,8 @@ struct HolidaysView: View {
                 }
             }
         }
+        .scrollContentBackground(.hidden)
+        .background(Pastel.background)
         .navigationTitle("Holidays")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {

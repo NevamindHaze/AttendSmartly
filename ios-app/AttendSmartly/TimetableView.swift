@@ -24,48 +24,42 @@ struct TimetableView: View {
 
         NavigationStack {
             VStack(spacing: 0) {
-                Picker("Day", selection: $day) {
-                    ForEach(1...7, id: \.self) { d in
-                        Text(Self.dayNames[d - 1]).tag(d)
+                VStack(alignment: .leading, spacing: 10) {
+                    DayStrip(day: $day)
+                    HStack {
+                        Text(DateUtils.prettyDate(selectedDateISO))
+                            .font(.subheadline.weight(.medium))
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Toggle(isOn: $showAllEntries) {
+                            Text("Show all")
+                                .font(.footnote.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                        }
+                        .toggleStyle(.switch)
+                        .fixedSize()
+                        .accessibilityHint("Also shows inactive classes and classes outside their date range")
                     }
                 }
-                .pickerStyle(.segmented)
                 .padding(.horizontal)
-                .padding(.top)
-
-                HStack {
-                    Text(DateUtils.prettyDate(selectedDateISO))
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                }
-                .padding(.horizontal)
-
-                Toggle("Show inactive or out-of-range classes", isOn: $showAllEntries)
-                    .font(.footnote)
-                    .padding(.horizontal)
-                    .padding(.vertical, 8)
+                .padding(.top, 8)
+                .padding(.bottom, 4)
 
                 if dayEntries.isEmpty {
-                    VStack(spacing: 12) {
-                        Image(systemName: "calendar")
-                            .font(.system(size: 36, weight: .medium))
-                            .foregroundStyle(DashboardPalette.green)
-                        Text(showAllEntries || allDayEntries.isEmpty
-                             ? "No classes on this day"
-                             : "No active classes on this date")
-                            .font(.title3.bold())
-                        Text(subjects.isEmpty
-                             ? "Add a subject first, then schedule it here."
-                             : (!showAllEntries && !allDayEntries.isEmpty
-                                ? "Turn on “Show inactive or out-of-range classes” to review other schedules."
-                                : "Tap + to schedule a class."))
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
-                    }
-                    .padding(32)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    EmptyStateView(
+                        symbol: "calendar",
+                        title: showAllEntries || allDayEntries.isEmpty
+                            ? "No classes on this day"
+                            : "No active classes on this date",
+                        message: subjects.isEmpty
+                            ? "Add a subject first, then schedule it here."
+                            : (!showAllEntries && !allDayEntries.isEmpty
+                               ? "Turn on Show all to see inactive or out-of-range classes."
+                               : "Tap + to schedule a class.")
+                    )
+                    .tile(Pastel.surface)
+                    .padding()
+                    .frame(maxHeight: .infinity, alignment: .top)
                 } else {
                     List {
                         ForEach(dayEntries) { entry in
@@ -76,6 +70,7 @@ struct TimetableView: View {
                                 EntryRow(entry: entry)
                             }
                             .buttonStyle(.plain)
+                            .pastelRow(Pastel.subject(entry.subject?.colorValue ?? 0xFF607D8B))
                             .swipeActions(edge: .trailing) {
                                 Button(role: .destructive) {
                                     context.delete(entry)
@@ -86,9 +81,11 @@ struct TimetableView: View {
                             }
                         }
                     }
-                    .listStyle(.insetGrouped)
+                    .listStyle(.plain)
+                    .scrollContentBackground(.hidden)
                 }
             }
+            .background(Pastel.background)
             .navigationTitle("Timetable")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -127,37 +124,42 @@ private struct EntryRow: View {
         let subject = entry.subject
         let room = entry.roomOverride.isEmpty ? (subject?.room ?? "") : entry.roomOverride
 
-        HStack(spacing: 12) {
-            RoundedRectangle(cornerRadius: 3)
-                .fill(Color(argb: subject?.colorValue ?? 0xFF607D8B))
-                .frame(width: 5, height: 44)
-            VStack(alignment: .leading, spacing: 3) {
-                HStack {
-                    Text(subject?.name ?? "Unknown").font(.headline)
+        HStack(alignment: .top, spacing: 14) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(DateUtils.displayTime(entry.startTime))
+                    .font(.system(.subheadline, design: .rounded).weight(.bold))
+                Text(DateUtils.displayTime(entry.endTime))
+                    .font(.caption)
+                    .opacity(0.65)
+            }
+            .monospacedDigit()
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
+            .frame(width: 68, alignment: .leading)
+
+            VStack(alignment: .leading, spacing: 5) {
+                Text(subject?.name ?? "Unknown")
+                    .font(.system(.headline, design: .rounded).weight(.bold))
+                if !room.isEmpty {
+                    Label(room, systemImage: "mappin.and.ellipse")
+                        .font(.footnote)
+                        .opacity(0.75)
+                }
+                HStack(spacing: 6) {
+                    if entry.attendanceUnitCount > 1 {
+                        TilePill(text: "\(entry.attendanceUnitCount) units")
+                    }
                     if !entry.isActive {
-                        Text("Inactive")
-                            .font(.caption2.bold())
-                            .padding(.horizontal, 6).padding(.vertical, 2)
-                            .background(Color.secondary.opacity(0.2), in: Capsule())
+                        TilePill(text: "Inactive", symbol: "pause.circle")
+                    }
+                    if !entry.startDate.isEmpty || !entry.endDate.isEmpty {
+                        TilePill(text: "\(entry.startDate.isEmpty ? "…" : DateUtils.prettyDate(entry.startDate)) → \(entry.endDate.isEmpty ? "…" : DateUtils.prettyDate(entry.endDate))")
                     }
                 }
-                Text("\(DateUtils.displayTime(entry.startTime)) – \(DateUtils.displayTime(entry.endTime))"
-                     + (room.isEmpty ? "" : "  ·  \(room)"))
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                if !entry.startDate.isEmpty || !entry.endDate.isEmpty {
-                    Text("\(entry.startDate.isEmpty ? "…" : entry.startDate) → \(entry.endDate.isEmpty ? "…" : entry.endDate)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
             }
-            Spacer()
-            if entry.attendanceUnitCount > 1 {
-                Text("\(entry.attendanceUnitCount) units")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
+            Spacer(minLength: 0)
         }
+        .foregroundStyle(Pastel.ink)
         .contentShape(Rectangle())
     }
 }
