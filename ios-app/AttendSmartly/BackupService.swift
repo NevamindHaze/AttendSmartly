@@ -95,9 +95,11 @@ struct ImportResult {
     var units = 0
     var holidays = 0
     var skipped = 0
+    var alreadyPresent = 0
 
     var summary: String {
         var text = "Imported \(subjects) subjects, \(entries) timetable entries, \(sessions) sessions, \(units) attendance units and \(holidays) holidays."
+        if alreadyPresent > 0 { text += " Left out \(alreadyPresent) items that were already in the app." }
         if skipped > 0 { text += " Skipped \(skipped) items that referenced missing data." }
         return text
     }
@@ -174,8 +176,26 @@ enum BackupService {
         var subjectMap: [Int: Subject] = [:]
         var entryMap: [Int: TimetableEntry] = [:]
         var sessionMap: [Int: AttendanceSession] = [:]
+        var duplicateSessionIDs = Set<Int>()
+
+        // Merge safeguard: a subject that already exists (same name, ignoring case and spaces)
+        // is reused instead of copied, and its classes and records are only added if missing.
+        func key(_ name: String) -> String {
+            name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        }
+        var existingByName: [String: Subject] = [:]
+        for subject in try context.fetch(FetchDescriptor<Subject>()) {
+            existingByName[key(subject.name)] = existingByName[key(subject.name)] ?? subject
+        }
+        var reused = Set<UUID>()
 
         for (i, b) in (backup.subjects ?? []).enumerated() {
+            if let existing = existingByName[key(text(b.name, "Unnamed Subject"))] {
+                subjectMap[b.id ?? -(i + 1)] = existing
+                reused.insert(existing.id)
+                result.alreadyPresent += 1
+                continue
+            }
             let s = Subject(name: text(b.name, "Unnamed Subject"))
             s.code = text(b.code)
             s.type = text(b.type, "Lecture")
@@ -198,6 +218,15 @@ enum BackupService {
 
         for (i, b) in (backup.timetableEntries ?? []).enumerated() {
             guard let sid = b.subjectId, let subject = subjectMap[sid] else { result.skipped += 1; continue }
+            if reused.contains(subject.id), let match = subject.timetableEntries.first(where: {
+                $0.dayOfWeek == (b.dayOfWeek ?? 0)
+                    && $0.startTime == text(b.startTime, "09:00")
+                    && $0.endTime == text(b.endTime, "10:00")
+            }) {
+                entryMap[b.id ?? -(i + 1)] = match
+                result.alreadyPresent += 1
+                continue
+            }
             let e = TimetableEntry()
             e.dayOfWeek = (1...7).contains(b.dayOfWeek ?? 0) ? (b.dayOfWeek ?? 1) : 1
             e.startTime = text(b.startTime, "09:00")
@@ -219,6 +248,13 @@ enum BackupService {
 
         for (i, b) in (backup.sessions ?? []).enumerated() {
             guard let sid = b.subjectId, let subject = subjectMap[sid] else { result.skipped += 1; continue }
+            if reused.contains(subject.id), subject.sessions.contains(where: {
+                $0.sessionDate == text(b.sessionDate) && $0.startTime == text(b.startTime, "09:00")
+            }) {
+                duplicateSessionIDs.insert(b.id ?? -(i + 1))
+                result.alreadyPresent += 1
+                continue
+            }
             let s = AttendanceSession(
                 sessionDate: text(b.sessionDate, DateUtils.isoString(Date())),
                 startTime: text(b.startTime, "09:00"),
@@ -236,6 +272,7 @@ enum BackupService {
         }
 
         for b in backup.units ?? [] {
+            if let sid = b.sessionId, duplicateSessionIDs.contains(sid) { continue }
             guard let sid = b.sessionId, let session = sessionMap[sid] else { result.skipped += 1; continue }
             let u = AttendanceUnit(unitIndex: max(0, b.unitIndex ?? 0), status: AttendanceStatus.parse(b.status))
             u.markedAt = date(fromMillis: b.markedAt)
@@ -244,8 +281,14 @@ enum BackupService {
             result.units += 1
         }
 
+        let existingHolidays = Set(try context.fetch(FetchDescriptor<Holiday>()).map { $0.date + "|" + key($0.title) })
         for b in backup.holidays ?? [] {
-            let h = Holiday(date: text(b.date, DateUtils.isoString(Date())), title: text(b.title, "Holiday"))
+            let holidayDate = text(b.date, DateUtils.isoString(Date()))
+            if existingHolidays.contains(holidayDate + "|" + key(text(b.title, "Holiday"))) {
+                result.alreadyPresent += 1
+                continue
+            }
+            let h = Holiday(date: holidayDate, title: text(b.title, "Holiday"))
             h.notes = text(b.notes)
             context.insert(h)
             result.holidays += 1

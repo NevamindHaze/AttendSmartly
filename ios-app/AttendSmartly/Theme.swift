@@ -60,10 +60,14 @@ struct ProgressRing<Center: View>: View {
             if let target {
                 GeometryReader { geo in
                     let radius = min(geo.size.width, geo.size.height) / 2 - lineWidth / 2
+                    let knob = max(8, lineWidth * 0.8)
                     ZStack {
-                        Capsule()
-                            .fill(Color.primary.opacity(0.85))
-                            .frame(width: 3, height: lineWidth + 8)
+                        // Goal marker: a small light knob sitting on the ring at the target.
+                        Circle()
+                            .fill(Color.white)
+                            .overlay(Circle().strokeBorder(Color.black.opacity(0.55), lineWidth: 2))
+                            .frame(width: knob, height: knob)
+                            .shadow(color: .black.opacity(0.25), radius: 1.5)
                             .offset(y: -radius)
                     }
                     .frame(width: geo.size.width, height: geo.size.height)

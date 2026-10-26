@@ -115,6 +115,30 @@ final class AttendSmartlyTests: XCTestCase {
         XCTAssertEqual(backup.holidays?.first?.title, "Winter holiday")
     }
 
+    func testMergingTheSameBackupTwiceDoesNotDuplicateData() throws {
+        let container = try makeContainer()
+        let context = ModelContext(container)
+        let fixtureURL = try XCTUnwrap(
+            Bundle(for: type(of: self)).url(forResource: "android-backup", withExtension: "json")
+        )
+        let fixture = try Data(contentsOf: fixtureURL)
+
+        _ = try BackupService.importData(fixture, into: context, replaceExisting: true)
+        let second = try BackupService.importData(fixture, into: context, replaceExisting: false)
+
+        XCTAssertEqual(second.subjects, 0)
+        XCTAssertEqual(second.entries, 0)
+        XCTAssertEqual(second.sessions, 0)
+        XCTAssertEqual(second.units, 0)
+        XCTAssertEqual(second.holidays, 0)
+        XCTAssertGreaterThan(second.alreadyPresent, 0)
+        XCTAssertEqual(try context.fetch(FetchDescriptor<Subject>()).count, 1)
+        XCTAssertEqual(try context.fetch(FetchDescriptor<TimetableEntry>()).count, 1)
+        XCTAssertEqual(try context.fetch(FetchDescriptor<AttendanceSession>()).count, 1)
+        XCTAssertEqual(try context.fetch(FetchDescriptor<AttendanceUnit>()).count, 2)
+        XCTAssertEqual(try context.fetch(FetchDescriptor<Holiday>()).count, 1)
+    }
+
     func testInvalidBackupIsRejected() throws {
         let container = try makeContainer()
         let context = ModelContext(container)

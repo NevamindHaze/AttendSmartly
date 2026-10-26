@@ -55,8 +55,14 @@ struct AnalyticsView: View {
             let diff = $0.summary.percentage - $0.summary.target
             return diff >= 0 && diff <= 5
         }
-        let best = tracked.max { $0.summary.percentage < $1.summary.percentage }
-        let lowest = tracked.min { $0.summary.percentage < $1.summary.percentage }
+        // Ties are broken the same way every time: more classes attended, then name.
+        let ranked = tracked.sorted {
+            if $0.summary.percentage != $1.summary.percentage { return $0.summary.percentage > $1.summary.percentage }
+            if $0.summary.present != $1.summary.present { return $0.summary.present > $1.summary.present }
+            return $0.subject.name.localizedCaseInsensitiveCompare($1.subject.name) == .orderedAscending
+        }
+        let best = ranked.first
+        let lowest = ranked.count > 1 ? ranked.last : nil
         let totalSafe = tracked.map { $0.summary.safeBunks }.reduce(0, +)
         let trend = weeklyTrend(sessions)
 
@@ -108,30 +114,46 @@ struct AnalyticsView: View {
 
         return card {
             Text("Overall attendance").font(.headline)
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text("\(Int(overall.percentage.rounded()))%")
-                    .font(.system(size: 44, weight: .bold, design: .rounded))
-                    .foregroundStyle(tint)
-                Text("of \(Int(overall.target.rounded()))% target").foregroundStyle(.secondary)
+            HStack(spacing: 22) {
+                ProgressRing(value: overall.percentage, target: overall.target, tint: tint, lineWidth: 14) {
+                    VStack(spacing: 0) {
+                        Text("\(Int(overall.percentage.rounded()))%")
+                            .font(.system(size: 38, weight: .bold, design: .rounded))
+                            .foregroundStyle(tint)
+                        Text("goal \(Int(overall.target.rounded()))%")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .frame(width: 148, height: 148)
+
+                VStack(alignment: .leading, spacing: 10) {
+                    StatusPill(text: attendanceLabel(overall), tint: tint)
+                    countRow("Present", count(.present), AttendanceStatus.present.tint)
+                    countRow("Absent", count(.absent), AttendanceStatus.absent.tint)
+                    if count(.bunked) > 0 {
+                        countRow("Bunked", count(.bunked), AttendanceStatus.bunked.tint)
+                    }
+                    countRow("Cancelled", count(.cancelled), AttendanceStatus.cancelled.tint)
+                }
             }
-            ProgressView(value: min(overall.percentage, 100), total: 100).tint(tint)
-            StatusPill(text: attendanceLabel(overall), tint: tint)
-            HStack {
-                countChip("Present", count(.present), AttendanceStatus.present.tint)
-                countChip("Absent", count(.absent), AttendanceStatus.absent.tint)
-                countChip("Bunked", count(.bunked), AttendanceStatus.bunked.tint)
-                countChip("Cancelled", count(.cancelled), AttendanceStatus.cancelled.tint)
-            }
-            Text(overall.message).font(.footnote).foregroundStyle(.secondary)
+            Text(overall.message)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
-    private func countChip(_ title: String, _ value: Int, _ tint: Color) -> some View {
-        VStack(spacing: 2) {
-            Text("\(value)").font(.title3.bold()).foregroundStyle(tint)
-            Text(title).font(.caption2).foregroundStyle(.secondary)
+    private func countRow(_ title: String, _ value: Int, _ tint: Color) -> some View {
+        HStack(spacing: 8) {
+            Circle().fill(tint).frame(width: 8, height: 8)
+            Text("\(value)")
+                .font(.system(.body, design: .rounded).weight(.semibold))
+                .monospacedDigit()
+            Text(title)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
         }
-        .frame(maxWidth: .infinity)
     }
 
     private func highlights(best: SubjectStat?, lowest: SubjectStat?, totalSafe: Int) -> some View {
