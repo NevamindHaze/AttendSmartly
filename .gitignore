@@ -17,4 +17,5 @@ local.properties
 .env
 debug.keystore
 AttendSmartly.jks
-AttendSmartly_base64.txthelper/AttendSmartly_backup.json
+AttendSmartly_base64.txt
+helper/AttendSmartly_backup.json
