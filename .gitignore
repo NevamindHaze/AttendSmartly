@@ -1,21 +1,30 @@
-*.iml
-.gradle
-.kotlin
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
+# Xcode
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.xcscmblueprint
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# macOS / editors
 .DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
-local.properties
+.vscode/
+.idea/
+
+# Secrets and personal data. Never commit these.
 .env
-debug.keystore
-AttendSmartly.jks
-AttendSmartly_base64.txt
+*.jks
+*.keystore
+*_base64.txt
+*.p12
+*.mobileprovision
 helper/AttendSmartly_backup.json
+*_backup.json

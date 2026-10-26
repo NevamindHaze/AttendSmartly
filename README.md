@@ -1,222 +1,117 @@
-# Bunk - College Attendance Tracker & Bunk Calculator
-
 <div align="center">
 
-<img src="helper/AttendSmartly.png" alt="AttendSmartly Logo" width="150" height="150" />
+<img src="AttendSmartly/Assets.xcassets/AppIcon.appiconset/AppIcon.png" alt="AttendSmartly app icon" width="120" height="120" />
 
-[![License: GPL v3](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.0.21-purple.svg?logo=kotlin)](https://kotlinlang.org/)
-[![Jetpack Compose](https://img.shields.io/badge/UI-Jetpack%20Compose%20%26%20M3-4285F4.svg?logo=android)](https://developer.android.com/jetpack/compose)
-[![Min API](https://img.shields.io/badge/API-24%2B%20(Android%207.0%2B)-brightgreen.svg?logo=android)](https://android.com)
-[![Architecture](https://img.shields.io/badge/Architecture-MVVM%20%2B%20Clean-orange.svg)](https://developer.android.com/topic/architecture)
-[![Build Status](https://img.shields.io/badge/Build-Passing-success.svg)](.github/workflows/android.yml)
+# AttendSmartly for iOS
 
 **Track classes. Plan bunks. Attend smartly.**
 
-*The ultimate open-source college attendance management, timetable builder, and safe bunk calculator for Android.*
+A native SwiftUI attendance tracker for college students, with a safe-bunk calculator,
+timetable, history and analytics. Everything stays on your iPhone.
+
+[![Build iOS App](https://github.com/NevamindHaze/AttendSmartly/actions/workflows/ios-build.yml/badge.svg)](https://github.com/NevamindHaze/AttendSmartly/actions/workflows/ios-build.yml)
+[![iOS 17+](https://img.shields.io/badge/iOS-17%2B-black?logo=apple)](#requirements)
+[![SwiftUI](https://img.shields.io/badge/UI-SwiftUI%20%2B%20SwiftData-orange?logo=swift)](#tech-stack)
+[![License: GPL v3](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
 
 </div>
 
----
+<p align="center">
+  <img src="docs/screenshots/home.png" alt="Home screen with overall attendance and quick stats" width="250" />
+  &nbsp;
+  <img src="docs/screenshots/today.png" alt="Today's classes with Present, Absent and Cancelled buttons" width="250" />
+  &nbsp;
+  <img src="docs/screenshots/subjects.png" alt="Subjects list with a percentage and goal bar for each subject" width="250" />
+</p>
 
-## 📌 Table of Contents
+## Features
 
-- [Overview](#-overview)
-- [Key Features](#-key-features)
-- [Bunk & Recovery Math](#-bunk--recovery-math)
-- [Tech Stack & Architecture](#-tech-stack--architecture)
-- [Screen Tour & Capabilities](#-screen-tour--capabilities)
-- [Getting Started & Installation](#-getting-started--installation)
-- [Building from Source](#-building-from-source)
-- [Frequently Asked Questions (FAQ)](#-frequently-asked-questions-faq)
-- [Privacy & Open Source](#-privacy--open-source)
-- [Author & License](#-author--license)
+- **Today at a glance.** Your overall attendance, how many classes you need to attend to reach your goal (or how many you can safely miss), and today's classes with one-tap Present, Absent and Cancelled buttons.
+- **Safe-bunk calculator.** Every subject shows its percentage against its own target, plus a plain-language verdict such as "Attend the next 7 units to reach 75%".
+- **Multi-unit classes.** A two-hour lab can count as two attendance units, each marked separately.
+- **Timetable.** A weekly schedule with a day picker, per-class rooms and teachers, and optional start and end dates.
+- **Any date.** Review or mark attendance for past and future days, add extra classes, cancel a class or reschedule it.
+- **History.** Every recorded class, grouped by date, with quick fixes for wrong marks.
+- **Analytics.** Overall progress, best and weakest subjects, a subject ranking, per-subject bars against goals and a weekly trend.
+- **Holidays and semesters.** Holidays hide that day's classes. Semester tracking limits the numbers to a date range.
+- **Class reminders.** Optional weekly notifications before each class.
+- **Backup and restore.** Import and export JSON backups. The format is compatible with the original AttendSmartly Android app, and merging the same backup twice never creates duplicates.
+- **Light and dark.** Soft pastel tiles by day, deep jewel tones by night. Add your own name and profile photo.
 
----
+## Install
 
-## 💡 Overview
+AttendSmartly is not on the App Store. It is installed with [SideStore](https://sidestore.io).
 
-**Bunk** (formerly AttendSmartly) is a clean, modern, student-focused Android attendance-tracking application built natively with **Kotlin**, **Jetpack Compose**, **Material Design 3**, and **Room Database**.
+1. Set up SideStore on your iPhone and sign in with your Apple ID inside SideStore.
+2. In SideStore, open **Sources**, tap **+**, and add:
 
-College academic rules often demand a mandatory minimum attendance threshold (e.g. 75% or 80%) with complex multi-hour class structures where practical labs count differently than single lectures. Bunk takes the guesswork out of attendance tracking by calculating your exact **Safe Bunks** and **Recovery Classes** in real time.
+   ```
+   https://github.com/NevamindHaze/AttendSmartly/releases/download/ios-latest/source.json
+   ```
 
----
+3. Open the AttendSmartly source and install the app.
 
-## ✨ Key Features
+Every successful build on `main` is published to this source automatically, so updates appear in SideStore under **My Apps**.
 
-### 📍 Classroom GPS Location & 5-Minute Dwell Auto-Attendance
-- **Classroom Geotagging**: Tag classroom locations directly to subjects or specific timetable slots with one-tap current GPS detection and configurable radius (`25m`, `50m`, `100m`, `150m`).
-- **5-Minute Dwell Verification**: Automatically marks attendance as **Present** when the student is verified inside the classroom location range for at least 5 minutes during scheduled class hours.
-- **Smart Geofencing & Fallback**: Powered by Google Play Services Geofencing with battery-efficient `GEOFENCE_TRANSITION_DWELL` and seamless fallback to native Android `LocationManager` on de-Googled devices.
-- **Visual Badges & Notifications**: Shows `AUTO-MARKED` and `📍 [radius]m` badges on class cards, plus dedicated notification channel alerts upon marking.
+Moving over from the Android app? Export a backup there, open AttendSmartly on iOS, tap your profile picture to open Settings, and choose **Import backup → Replace**.
 
-### 📅 Smart Weekly Timetable, Extra Classes & Semester Tracking
-- Configure recurring daily classes, room numbers, instructor names, and specific class types (Lecture, Practical Lab, Tutorial).
-- **Extra Class Scheduler**: Add one-off or compensatory extra classes to any date with custom unit counts without altering your recurring weekly timetable.
-- **Class Rescheduling**: Move any scheduled class to a new date and time with reason notes, metadata indicators, and instant one-tap revert capability.
-- **Semester Tracking**: Set active semester start and end dates to pause tracking during vacations and bound date selector navigation.
-- Quick action speed dial on Home screen for Extra Classes, Rescheduling, Adding Subjects, and Adding Timetable Entries.
+## Build from source
 
-### ⏱️ Multi-Hour & Partial Unit Tracking
-- Real-world college classes aren't always 1 hour. Set custom unit values per class (e.g., a 2-hour lecture = 2 units, a 3-hour practical lab = 1 unit).
-- Mark individual units as **Present**, **Absent**, or **Cancelled** without skewing your true statistics.
-
-### 🎯 Safe Bunk & Attendance Recovery Calculator
-- **Safe Bunk Calculator**: Calculates the exact number of upcoming classes you can safely skip while staying above your target percentage (e.g., 75%).
-- **Recovery Calculator**: Calculates how many consecutive upcoming classes you must attend to pull a low percentage back up to your target.
-
-### 📷 Smart Timetable OCR Scanner & Flexible Onboarding
-- Import your timetable from a photo or document image.
-- Powered by the Google Gemini Vision API to automatically parse subjects, timings, and days into your schedule.
-- Multi-option onboarding setup (Upload Timetable via OCR or Manual Setup) with Gemini API key input and visibility toggle.
-
-### 🔔 Automated Class Reminders & Notification Settings
-- Background notification alarms powered by Android `AlarmManager` and `WorkManager` featuring room number and instructor metadata.
-- Receive timely pre-class notifications with one-tap attendance logging actions.
-- Full notification control in Settings: customize reminder switches, notification sound chimes, vibration feedback, and Android 13+ runtime permissions.
-
-### 📊 Comprehensive Analytics & History Logs
-- Interactive Material 3 progress cards, status breakdown chips, and donut charts.
-- Editable historical logs allowing you to modify past attendance entries at any time.
-
-### ⚙️ Modular Settings & Data Backups
-- Organized into 6 dedicated sub-windows: **Attendance Rules & Goals**, **Notifications & Alerts**, **Appearance & Theme**, **AI & Timetable Scanner**, **Data Management & Backup**, and **About & Updates**.
-- Quick target percentage chips (`70%`, `75%`, `80%`, `85%`, `90%`), reminder lead time chips (`5m`, `10m`, `15m`, `30m`), and native Material `DatePickerDialog` for semester calendar dates.
-- Export and import full JSON timetable backups via Android's Storage Access Framework (SAF) with 100% roundtrip fidelity.
-- Generate detailed CSV attendance reports for spreadsheet analysis or academic record-keeping.
-
----
-
-## 🧮 Bunk & Recovery Math
-
-AttendSmartly uses precise mathematical formulas to compute attendance metrics:
-
-### Overall Attendance Percentage
-$$
-\text{Attendance \%} = \left( \frac{\text{Units Attended (Present)}}{\text{Total Conducted Units (Present + Absent)}} \right) \times 100
-$$
-
-### Safe Bunks Formula
-*How many upcoming classes can you skip before dropping below target threshold $T$?*
-$$
-\text{Safe Bunks} = \left\lfloor \frac{P - (T \times \text{Total})}{T} \right\rfloor
-$$
-
-### Recovery Classes Formula
-*How many consecutive classes must you attend to reach target threshold $T$?*
-$$
-\text{Required Classes} = \left\lceil \frac{(T \times \text{Total}) - P}{1 - T} \right\rceil
-$$
-
-*Cancelled classes are automatically excluded from conducted totals so your percentage remains accurate.*
-
----
-
-## 🛠 Tech Stack & Architecture
-
-- **Language**: Kotlin 2.0 (100% Native)
-- **UI Framework**: Jetpack Compose & Material Design 3
-- **Architecture**: Single-Activity, MVVM (Model-View-ViewModel), Clean Architecture with Repository Pattern
-- **Database**: Room Database v2 with KSP (Kotlin Symbol Processing), Idempotent Migrations & Kotlin Coroutine Flow
-- **Preferences**: Android Jetpack DataStore Preferences with Corruption Auto-Recovery
-- **Location & Geofencing**: Google Play Services Location & Geofencing API with native Android LocationManager fallback
-- **Background Operations**: WorkManager & AlarmManager
-- **Navigation**: Type-safe Navigation Compose
-- **Data Export**: Gson (JSON) & OpenCSV (CSV) via Storage Access Framework (SAF)
-
----
-
-## 📱 Screenshots
-
-<div align="center">
-  <img src="assets/screenshots/home_dashboard.jpg" width="200" alt="Home Dashboard & Speed Dial"/>
-  <img src="assets/screenshots/reschedule_class.jpg" width="200" alt="Reschedule Class Dialog"/>
-  <img src="assets/screenshots/weekly_timetable.jpg" width="200" alt="Weekly Timetable"/>
-  <img src="assets/screenshots/subjects_list.jpg" width="200" alt="Subjects List"/>
-  <br/><br/>
-  <img src="assets/screenshots/subject_details.jpg" width="200" alt="Subject Details & Circular Gauge"/>
-  <img src="assets/screenshots/attendance_analytics.jpg" width="200" alt="Attendance Analytics"/>
-  <img src="assets/screenshots/subject_wise_progress.jpg" width="200" alt="Subject-Wise Progress"/>
-  <img src="assets/screenshots/settings_overview.jpg" width="200" alt="Modular Settings Overview"/>
-</div>
-
----
-
-## 🚀 Getting Started & Installation
-
-### Option 1: Download APK
-1. Go to the [Releases](https://github.com/agupta07505/AttendSmartly/releases) page.
-2. Download the latest `AttendSmartly-Release.apk`.
-3. Install the APK on your Android device (Android 7.0 / API 24 or higher).
-
-### Option 2: Build from Source
-Requirements:
-- Android Studio Ladybug (2024.2.1) or newer
-- JDK 17
-- Android SDK 34+
+You need a Mac with Xcode 16 or later.
 
 ```bash
-# 1. Clone the repository
-git clone https://github.com/agupta07505/AttendSmartly.git
+git clone https://github.com/NevamindHaze/AttendSmartly.git
 cd AttendSmartly
-
-# 2. Build Debug APK
-./gradlew assembleDebug
-
-# 3. Run Unit Tests
-./gradlew testDebugUnitTest
+open AttendSmartly.xcodeproj
 ```
 
----
+Select the **AttendSmartly** scheme and run it on a simulator or device. There are no third-party dependencies. To run the unit tests, press **⌘U**.
 
-## ❓ Frequently Asked Questions (FAQ)
+Without a Mac, push to GitHub: the [Build iOS App](.github/workflows/ios-build.yml) workflow builds the app on a macOS runner, runs the tests and publishes an unsigned IPA.
 
-<details>
-<summary><b>1. Is AttendSmartly completely free and offline?</b></summary>
-<br/>
-Yes! AttendSmartly is 100% free, open-source software licensed under the GNU GPL v3. All attendance logs, timetables, and settings are stored locally on your device in an encrypted Room Database. No data is sent to external tracking servers.
-</details>
+## Requirements
 
-<details>
-<summary><b>2. How does the Safe Bunk Calculator work?</b></summary>
-<br/>
-The safe bunk calculator evaluates your target percentage (e.g. 75%), your total present units, and total conducted units. It mathematically calculates the maximum number of future classes you can miss without falling below your target threshold.
-</details>
+- iOS 17.0 or later (iPhone)
+- Xcode 16 or later to build
 
-<details>
-<summary><b>3. What happens if a teacher cancels a lecture?</b></summary>
-<br/>
-You can mark the session as <b>Cancelled</b>. Cancelled units are excluded from total conducted classes, ensuring your attendance percentage remains completely untouched.
-</details>
+## Tech stack
 
-<details>
-<summary><b>4. How do I use the Smart Timetable OCR Scanner?</b></summary>
-<br/>
-In the Timetable screen, select the OCR Scanner option and upload an image of your college timetable. You can optionally enter your personal free Google Gemini API key from Google AI Studio to perform automatic schedule extraction.
-</details>
+| Area | Choice |
+| --- | --- |
+| UI | SwiftUI |
+| Storage | SwiftData, on device only |
+| Charts | Swift Charts |
+| Notifications | UserNotifications (local, scheduled weekly) |
+| CI | GitHub Actions on macOS runners |
+| Distribution | Unsigned IPA plus a SideStore source |
 
----
+## Project structure
 
-## 🔒 Privacy & Open Source
-
-AttendSmartly values your privacy. It contains **zero telemetry**, **zero analytics SDKs**, and **zero hidden tracking**. All student data remains exclusively on your device.
-
-Read our full policies:
-- [Privacy Policy](PRIVACY.md)
-- [Terms of Service](TERMS.md)
-- [Security Policy](SECURITY.md)
-- [5W2H Analysis](5W2H.md)
-
----
-
-## 📄 Author & License
-
-Designed and developed with ❤️ by **NevamindHaze** ([@NevamindHaze](https://github.com/NevamindHaze)).
-
-```text
-AttendSmartly (2026)
-© Animesh Gupta — github.com/agupta07505
-Licensed under the GNU General Public License v3.0 (GPL-3.0).
+```
+AttendSmartly/            App source
+  AttendSmartlyApp.swift  App entry point and data store
+  Models.swift            SwiftData models (subjects, timetable, sessions, units, holidays)
+  AttendanceCalculator.swift  Percentage, safe-bunk and recovery maths
+  BackupService.swift     JSON import and export
+  HomeView.swift          Home screen
+  SubjectsView.swift      Subjects list and subject form
+  TimetableView.swift     Weekly timetable and class form
+  HistoryView.swift       Attendance history and editing
+  AnalyticsView.swift     Charts, ranking and insights
+  SettingsView.swift      Profile, reminders, semester, backup
+  Pastel.swift, Theme.swift   Colours, tiles and shared components
+AttendSmartlyTests/       Unit tests and a backup fixture
+.github/workflows/        Build, test and publish workflow
 ```
 
-*See the [LICENSE](LICENSE) file for full legal terms.*
+## Privacy
+
+AttendSmartly has no accounts, servers or analytics. Your data and profile photo stay on your device. See [PRIVACY.md](PRIVACY.md).
+
+## Credits and license
+
+This iOS app is a SwiftUI port of [AttendSmartly](https://github.com/agupta07505/AttendSmartly), the open-source Android app by **Animesh Gupta**. The attendance logic, feature set and backup format follow the original project. The iOS code in this repository was written in 2026 and maintained by [NevamindHaze](https://github.com/NevamindHaze).
+
+The original Android source code is preserved on the [`android-archive`](https://github.com/NevamindHaze/AttendSmartly/tree/android-archive) branch.
+
+Licensed under the [GNU General Public License v3.0](LICENSE), the same license as the original project.

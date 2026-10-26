@@ -1,26 +1,15 @@
-# Security Policy — AttendSmartly
+# Security Policy
 
-## Supported Versions
+## Supported versions
 
-Only the latest release of **AttendSmartly** receives active security updates and bug fixes.
+Only the latest build published to the SideStore source receives fixes.
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 1.1.x   | :white_check_mark: |
-| 1.0.x   | :white_check_mark: |
+## Reporting a vulnerability
 
----
+Please do not open a public issue for security problems. Instead, use GitHub's
+[private vulnerability reporting](https://github.com/NevamindHaze/AttendSmartly/security/advisories/new)
+for this repository, with steps to reproduce and the affected build number
+(shown in SideStore under the app's version).
 
-## Reporting a Vulnerability
-
-We take the security of **AttendSmartly** seriously. If you discover a security vulnerability, please report it responsibly:
-
-1. **Do NOT open a public GitHub issue** for undisclosed security vulnerabilities.
-2. Report the vulnerability directly to the project maintainer:
-   - **Maintainer**: Animesh Gupta
-   - **GitHub**: [@agupta07505](https://github.com/agupta07505)
-3. Provide detailed steps to reproduce the issue, potential impact, and suggested mitigations.
-
-### Response Expectations
-- **Acknowledgement**: Within 48 hours.
-- **Triage & Remediation**: A fix will be developed and released in the next patch version as soon as possible.
+The app stores all data locally and makes no network requests of its own, so most
+reports will concern backup files or data handling on the device.

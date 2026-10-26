@@ -1,43 +1,32 @@
-# Privacy Policy — AttendSmartly
+# Privacy Policy
 
-**Last Updated**: 2026
+**AttendSmartly for iOS**, last updated 26 October 2026.
 
-At **AttendSmartly**, accessible from our open-source repository and application builds, we respect your privacy. This Privacy Policy outlines what information is collected and how it is managed.
+AttendSmartly is a personal, open-source app. It has no accounts, no servers and no analytics.
 
----
+## What the app stores
 
-## 1. Offline-First & Local Storage
+Everything stays on your iPhone, inside the app's private storage:
 
-- **Local Database**: All your attendance logs, subjects, schedules, unit rules, and target thresholds are stored **100% locally on your device** inside an encrypted Room Database (`attendsmartly_database.db`).
-- **No Remote Telemetry**: AttendSmartly does **NOT** collect, track, or transmit any user usage data, analytics, or personal identifiers to external servers or third parties.
+- Your subjects, timetable, attendance records, holidays and settings (stored with SwiftData).
+- Your name and profile photo, if you add them. The photo is resized and kept in the app's own folder.
 
----
+Nothing is uploaded, synced or shared by the app.
 
-## 2. Smart Timetable OCR & API Keys
+## Permissions
 
-- **Optional Feature**: If you use the Smart Timetable OCR Scanner to import your schedule from an image, the image is processed via the Google Gemini API.
-- **Personal API Key**: You can provide your own personal Google Gemini API key. This key is stored securely in local Android DataStore Preferences and is only sent directly to Google's official API endpoints (`generativelanguage.googleapis.com`) to fulfill your OCR request.
-- **No Third-Party Proxies**: No intermediate servers receive your API key or timetable images.
+- **Notifications** (optional): used only to remind you before classes. Reminders are scheduled locally on the device.
+- **Photos** (optional): when you choose a profile photo, iOS shows its own picker and gives the app only the photo you select.
+- **Files**: used only when you import or export a backup. You choose where backups are saved.
 
----
+## Backups
 
-## 3. Data Export & Backups
+Backups are plain JSON files that you export yourself. They contain your attendance data, so keep them somewhere private.
 
-- **User Control**: You have full ownership of your data. You can export JSON backups or CSV reports at any time via Android's native Storage Access Framework (SAF).
-- **No Cloud Synchronization**: Backups are stored strictly in the location specified by you on your local storage or connected drive.
+## Deleting your data
 
----
+Use **Settings → Delete all data** in the app, or delete the app from your iPhone.
 
-## 4. Permissions
+## Contact
 
-AttendSmartly requests minimal Android permissions:
-- `POST_NOTIFICATIONS`: To send timely class reminders.
-- `SCHEDULE_EXACT_ALARM` / `USE_EXACT_ALARM`: To schedule accurate alarms before upcoming classes.
-- `RECEIVE_BOOT_COMPLETED`: To reschedule class reminder alarms when your phone restarts.
-
----
-
-## 5. Contact & Questions
-
-If you have any questions regarding this Privacy Policy, you can open an issue on GitHub:
-- **Developer**: Animesh Gupta ([@agupta07505](https://github.com/agupta07505))
+Questions about this policy can be raised as an [issue](https://github.com/NevamindHaze/AttendSmartly/issues).
