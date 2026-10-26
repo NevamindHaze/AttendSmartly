@@ -58,12 +58,14 @@ struct HomeView: View {
                         }
                     }
 
-                    OverallCard(summary: summary, semesterOn: semesterEnabled)
+                    HeroCard(summary: summary, semesterOn: semesterEnabled)
 
                     HStack {
-                        Text(selectedIsToday ? "Today's classes" : "Classes").font(.title2.bold())
+                        Text(selectedIsToday ? "Today" : "Classes").font(.title2.bold())
                         Spacer()
-                        Text("\(rows.count) scheduled").foregroundStyle(.secondary)
+                        Text(rows.count == 1 ? "1 class" : "\(rows.count) classes")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
                     }
 
                     if let holiday {
@@ -100,6 +102,7 @@ struct HomeView: View {
                 }
                 .padding()
             }
+            .background(Color(uiColor: .systemGroupedBackground))
             .navigationTitle("AttendSmartly")
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -288,63 +291,72 @@ struct HomeView: View {
     }
 
     private func infoBox(symbol: String, title: String, text: String) -> some View {
-        VStack(spacing: 8) {
-            Image(systemName: symbol).font(.title).foregroundStyle(DashboardPalette.green)
-            Text(title).font(.headline)
-            Text(text).font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(24)
-        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
+        EmptyStateView(symbol: symbol, title: title, message: text)
+            .cardStyle(20)
     }
 }
 
-private struct OverallCard: View {
+private struct HeroCard: View {
     let summary: AttendanceSummary
     let semesterOn: Bool
 
     var body: some View {
-        let onTrack = summary.conducted == 0 || summary.percentage >= summary.target
-        let tint = onTrack ? DashboardPalette.green : DashboardPalette.coral
+        let tint = attendanceTint(summary)
+        let hasData = summary.conducted > 0
 
-        VStack(alignment: .leading, spacing: 14) {
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Overall attendance").font(.headline)
-                    Text(semesterOn ? "This semester" : "Across all subjects")
-                        .font(.subheadline).foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 18) {
+            HStack(spacing: 22) {
+                ProgressRing(
+                    value: hasData ? summary.percentage : 0,
+                    target: hasData ? summary.target : nil,
+                    tint: tint,
+                    lineWidth: 14
+                ) {
+                    VStack(spacing: 0) {
+                        Text(hasData ? "\(Int(summary.percentage.rounded()))%" : "–")
+                            .font(.system(size: 38, weight: .bold, design: .rounded))
+                            .foregroundStyle(tint)
+                            .contentTransition(.numericText())
+                            .animation(.snappy, value: summary.percentage)
+                        Text("goal \(Int(summary.target.rounded()))%")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
                 }
-                Spacer()
-                Text(summary.conducted == 0 ? "No data" : (onTrack ? "On track" : "Below target"))
-                    .font(.caption.bold())
-                    .padding(.horizontal, 10).padding(.vertical, 5)
-                    .background(tint.opacity(0.15), in: Capsule())
-                    .foregroundStyle(tint)
-            }
+                .frame(width: 148, height: 148)
 
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text("\(Int(summary.percentage.rounded()))%")
-                    .font(.system(size: 48, weight: .bold, design: .rounded))
-                    .foregroundStyle(tint)
-                Text("attendance").foregroundStyle(.secondary)
-            }
-
-            ProgressView(value: min(summary.percentage, 100), total: 100).tint(tint)
-
-            HStack {
-                VStack(alignment: .leading) {
-                    Text("\(summary.present)").font(.title2.bold())
-                    Text("Attended").font(.caption).foregroundStyle(.secondary)
-                }
-                Spacer()
-                VStack(alignment: .trailing) {
-                    Text("\(summary.conducted)").font(.title2.bold())
-                    Text("Total classes").font(.caption).foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 10) {
+                    StatusPill(text: attendanceLabel(summary), tint: tint)
+                    stat("Present", summary.present, DashboardPalette.green)
+                    stat("Absent", summary.absent, DashboardPalette.coral)
+                    stat("Cancelled", summary.cancelled, DashboardPalette.blue)
                 }
             }
+
+            Text(summary.message)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Text(semesterOn ? "Counting this semester only" : "Counting all recorded classes")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
         }
-        .padding(18)
-        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20))
+        .padding(20)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .cardStyle(26)
+    }
+
+    private func stat(_ title: String, _ value: Int, _ tint: Color) -> some View {
+        HStack(spacing: 8) {
+            Circle().fill(tint).frame(width: 8, height: 8)
+            Text("\(value)")
+                .font(.system(.body, design: .rounded).weight(.semibold))
+                .monospacedDigit()
+            Text(title)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
     }
 }
 
@@ -356,57 +368,86 @@ private struct ClassCard: View {
     let onReschedule: () -> Void
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            RoundedRectangle(cornerRadius: 3)
-                .fill(Color(argb: row.subject.colorValue))
-                .frame(width: 5)
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text(DateUtils.displayTime(row.start))
+                        .font(.subheadline.weight(.semibold))
+                        .monospacedDigit()
+                    Text(DateUtils.displayTime(row.end))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+                }
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .frame(width: 68, alignment: .trailing)
 
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
+                RoundedRectangle(cornerRadius: 2, style: .continuous)
+                    .fill(Color(argb: row.subject.colorValue))
+                    .frame(width: 4)
+
+                VStack(alignment: .leading, spacing: 3) {
                     Text(row.subject.name).font(.headline)
-                    Spacer()
-                    if !row.subject.code.isEmpty {
-                        Text(row.subject.code).font(.caption).foregroundStyle(.secondary)
-                    }
-                    Menu {
-                        Button("Cancel class", systemImage: "xmark.circle", role: .destructive, action: onCancel)
-                        Button("Reschedule…", systemImage: "calendar.badge.clock", action: onReschedule)
-                    } label: {
-                        Image(systemName: "ellipsis.circle").foregroundStyle(.secondary)
+                    let detail = [row.subject.code, row.room].filter { !$0.isEmpty }.joined(separator: "  ")
+                    if !detail.isEmpty {
+                        Text(detail).font(.subheadline).foregroundStyle(.secondary)
                     }
                 }
-                Text("\(DateUtils.displayTime(row.start)) – \(DateUtils.displayTime(row.end))"
-                     + (row.room.isEmpty ? "" : "  ·  \(row.room)"))
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
 
+                Spacer(minLength: 0)
+
+                Menu {
+                    Button("Reschedule…", systemImage: "calendar.badge.clock", action: onReschedule)
+                    Button("Cancel class", systemImage: "xmark.circle", role: .destructive, action: onCancel)
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 32, height: 32)
+                        .contentShape(Rectangle())
+                }
+            }
+
+            VStack(spacing: 8) {
                 ForEach(0..<row.expectedUnits, id: \.self) { index in
                     HStack(spacing: 8) {
                         if row.expectedUnits > 1 {
-                            Text("Unit \(index + 1)").font(.caption).foregroundStyle(.secondary)
+                            Text("Unit \(index + 1)")
+                                .font(.caption.weight(.medium))
+                                .foregroundStyle(.secondary)
+                                .frame(width: 42, alignment: .leading)
                         }
-                        chip("Present", .present, index, DashboardPalette.green)
-                        chip("Absent", .absent, index, DashboardPalette.coral)
-                        chip("Cancelled", .cancelled, index, .gray)
+                        choice("Present", "checkmark", .present, index, DashboardPalette.green)
+                        choice("Absent", "xmark", .absent, index, DashboardPalette.coral)
+                        choice("Cancelled", "slash.circle", .cancelled, index, DashboardPalette.blue)
                     }
                 }
             }
         }
-        .padding(14)
-        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
+        .padding(16)
+        .cardStyle(20)
     }
 
-    private func chip(_ title: String, _ status: AttendanceStatus, _ index: Int, _ tint: Color) -> some View {
+    private func choice(_ title: String, _ symbol: String, _ status: AttendanceStatus, _ index: Int, _ tint: Color) -> some View {
         let selected = statusFor(index) == status
         return Button {
             onSet(index, selected ? .unmarked : status)
         } label: {
-            Text(title)
-                .font(.caption.bold())
-                .padding(.horizontal, 12).padding(.vertical, 7)
-                .background(selected ? tint : Color.secondary.opacity(0.15), in: Capsule())
-                .foregroundStyle(selected ? Color.white : Color.primary)
+            Label(title, systemImage: symbol)
+                .font(.footnote.weight(.semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 10)
+                .background(
+                    selected ? tint : tint.opacity(0.10),
+                    in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+                )
+                .foregroundStyle(selected ? Color.white : tint)
         }
         .buttonStyle(.plain)
+        .animation(.snappy(duration: 0.2), value: selected)
+        .sensoryFeedback(.selection, trigger: selected)
     }
 }

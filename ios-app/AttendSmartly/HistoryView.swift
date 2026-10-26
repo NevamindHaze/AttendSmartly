@@ -44,17 +44,11 @@ struct HistoryView: View {
         NavigationStack {
             Group {
                 if dates.isEmpty {
-                    VStack(spacing: 12) {
-                        Image(systemName: "clock.arrow.circlepath")
-                            .font(.system(size: 36, weight: .medium))
-                            .foregroundStyle(DashboardPalette.green)
-                        Text("No records yet").font(.title3.bold())
-                        Text("Mark classes on Home, or tap + to add a past class.")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
-                    }
-                    .padding(32)
+                    EmptyStateView(
+                        symbol: "clock.arrow.circlepath",
+                        title: "No records yet",
+                        message: "Mark classes on Home, or tap + to add a past class."
+                    )
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     List {

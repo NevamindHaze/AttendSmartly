@@ -4,9 +4,10 @@ import SwiftData
 // MARK: - Shared helpers
 
 enum DashboardPalette {
-    static let green = Color(red: 0.12, green: 0.42, blue: 0.34)
-    static let blue = Color(red: 0.26, green: 0.48, blue: 0.72)
-    static let coral = Color(red: 0.82, green: 0.38, blue: 0.29)
+    static let green = Color(red: 0.13, green: 0.52, blue: 0.41)
+    static let blue = Color(red: 0.29, green: 0.50, blue: 0.78)
+    static let coral = Color(red: 0.86, green: 0.38, blue: 0.30)
+    static let amber = Color(red: 0.91, green: 0.62, blue: 0.16)
 }
 
 extension Color {

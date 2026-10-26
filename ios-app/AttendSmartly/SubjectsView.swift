@@ -103,19 +103,13 @@ struct SubjectsView: View {
     }
 
     private var emptyState: some View {
-        VStack(spacing: 12) {
-            Image(systemName: showingArchived ? "archivebox" : "book.closed")
-                .font(.system(size: 38, weight: .medium))
-                .foregroundStyle(DashboardPalette.green)
-            Text(showingArchived ? "No archived subjects" : "No subjects yet").font(.title3.bold())
-            Text(showingArchived
-                 ? "Subjects you archive will appear here."
-                 : "Add a subject, or import your Android backup from Settings on the Home tab.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-        }
-        .padding(32)
+        EmptyStateView(
+            symbol: showingArchived ? "archivebox" : "books.vertical",
+            title: showingArchived ? "No archived subjects" : "No subjects yet",
+            message: showingArchived
+                ? "Subjects you archive will appear here."
+                : "Add a subject, or import your Android backup from Settings on the Home tab."
+        )
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
@@ -145,28 +139,45 @@ private struct SubjectRow: View {
                 .flatMap { $0.units.map { $0.status } },
             target: subject.targetPercentage
         )
-        let onTrack = summary.conducted == 0 || summary.percentage >= summary.target
-        let tint = onTrack ? DashboardPalette.green : DashboardPalette.coral
+        let tint = attendanceTint(summary)
+        let hasData = summary.conducted > 0
+        let meta = [subject.code, subject.type, subject.teacherName].filter { !$0.isEmpty }.joined(separator: "  ")
 
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 10) {
-                Circle().fill(Color(argb: subject.colorValue)).frame(width: 14, height: 14)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(subject.name).font(.headline)
-                    let sub = [subject.code, subject.type, subject.teacherName].filter { !$0.isEmpty }.joined(separator: " · ")
-                    if !sub.isEmpty { Text(sub).font(.caption).foregroundStyle(.secondary) }
-                }
-                Spacer()
-                Text(summary.conducted == 0 ? "–" : "\(Int(summary.percentage.rounded()))%")
-                    .font(.title3.bold())
+        HStack(spacing: 14) {
+            ProgressRing(
+                value: hasData ? summary.percentage : 0,
+                target: hasData ? summary.target : nil,
+                tint: tint,
+                lineWidth: 5
+            ) {
+                Text(hasData ? "\(Int(summary.percentage.rounded()))" : "–")
+                    .font(.system(.subheadline, design: .rounded).weight(.bold))
                     .foregroundStyle(tint)
+                    .monospacedDigit()
             }
-            if summary.conducted > 0 {
-                ProgressView(value: min(summary.percentage, 100), total: 100).tint(tint)
+            .frame(width: 54, height: 54)
+
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: 7) {
+                    Circle()
+                        .fill(Color(argb: subject.colorValue))
+                        .frame(width: 9, height: 9)
+                    Text(subject.name)
+                        .font(.headline)
+                        .lineLimit(2)
+                }
+                if !meta.isEmpty {
+                    Text(meta).font(.caption).foregroundStyle(.secondary)
+                }
+                Text(summary.message)
+                    .font(.caption)
+                    .foregroundStyle(hasData ? tint : Color.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            Text(summary.message).font(.caption).foregroundStyle(.secondary)
+
+            Spacer(minLength: 0)
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 6)
         .contentShape(Rectangle())
     }
 }

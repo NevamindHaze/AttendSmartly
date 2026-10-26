@@ -97,14 +97,13 @@ struct AnalyticsView: View {
 
     private func card<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 12) { content() }
-            .padding(16)
+            .padding(18)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 18))
+            .cardStyle(22)
     }
 
     private func overallCard(_ overall: AttendanceSummary, statuses: [AttendanceStatus]) -> some View {
-        let onTrack = overall.percentage >= overall.target
-        let tint = onTrack ? DashboardPalette.green : DashboardPalette.coral
+        let tint = attendanceTint(overall)
         func count(_ s: AttendanceStatus) -> Int { statuses.filter { $0 == s }.count }
 
         return card {
@@ -116,6 +115,7 @@ struct AnalyticsView: View {
                 Text("of \(Int(overall.target.rounded()))% target").foregroundStyle(.secondary)
             }
             ProgressView(value: min(overall.percentage, 100), total: 100).tint(tint)
+            StatusPill(text: attendanceLabel(overall), tint: tint)
             HStack {
                 countChip("Present", count(.present), AttendanceStatus.present.tint)
                 countChip("Absent", count(.absent), AttendanceStatus.absent.tint)
@@ -170,8 +170,8 @@ struct AnalyticsView: View {
                         x: .value("Attendance", stat.summary.percentage),
                         y: .value("Subject", stat.subject.name)
                     )
-                    .foregroundStyle(stat.summary.percentage >= stat.summary.target
-                                     ? DashboardPalette.green : DashboardPalette.coral)
+                    .foregroundStyle(attendanceTint(stat.summary))
+                    .cornerRadius(5)
 
                     PointMark(
                         x: .value("Target", stat.summary.target),
