@@ -17,11 +17,14 @@ timetable, history and analytics. Everything stays on your iPhone.
 </div>
 
 <p align="center">
-  <img src="docs/screenshots/home.png" alt="Home screen with overall attendance and quick stats" width="250" />
-  &nbsp;
-  <img src="docs/screenshots/today.png" alt="Today's classes with Present, Absent and Cancelled buttons" width="250" />
-  &nbsp;
-  <img src="docs/screenshots/subjects.png" alt="Subjects list with a percentage and goal bar for each subject" width="250" />
+  <img src="docs/sidestore/screenshots/light-home.png" alt="Home screen in light mode" width="200" />
+  <img src="docs/sidestore/screenshots/light-subjects.png" alt="Subjects list in light mode" width="200" />
+  <img src="docs/sidestore/screenshots/light-analytics.png" alt="Analytics in light mode" width="200" />
+</p>
+<p align="center">
+  <img src="docs/sidestore/screenshots/dark-home.png" alt="Home screen in dark mode" width="200" />
+  <img src="docs/sidestore/screenshots/dark-subjects.png" alt="Subjects list in dark mode" width="200" />
+  <img src="docs/sidestore/screenshots/dark-analytics.png" alt="Analytics in dark mode" width="200" />
 </p>
 
 ## Features

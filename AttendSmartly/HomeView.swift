@@ -170,6 +170,7 @@ struct HomeView: View {
                             .multilineTextAlignment(.center)
                     }
                     .padding()
+                    .frame(maxHeight: .infinity, alignment: .top)
                     .navigationTitle("Choose a date")
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
@@ -184,7 +185,7 @@ struct HomeView: View {
                         }
                     }
                 }
-                .presentationDetents([.large])
+                .presentationDetents([.fraction(0.72), .large])
                 .presentationDragIndicator(.visible)
             }
             .sheet(isPresented: $showSettings) { SettingsView() }

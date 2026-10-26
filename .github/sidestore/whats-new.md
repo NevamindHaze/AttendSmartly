@@ -3,4 +3,4 @@ New in this update:
 • Subject pages: tap any subject for a month calendar of your marks, its trend and recent classes
 • Timetable scan: add classes from a photo of your timetable (Timetable → + → Scan)
 • Weekly automatic backups, saved to Files → On My iPhone → AttendSmartly → Backups
-• Updates from SideStore are now more reliable
+• The date picker on Home now opens with the calendar at the top

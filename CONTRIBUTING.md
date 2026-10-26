@@ -30,4 +30,4 @@ Every push to `main` that builds successfully is published to the SideStore sour
 - `whats-new.md`: notes for the next build; update it with each user-facing change
 - `news.json`: posts for SideStore's News tab
 
-Screenshots live in `docs/screenshots/` and the source banner in `docs/sidestore/header.png`.
+Store screenshots live in `docs/sidestore/screenshots/` and the source banner in `docs/sidestore/header.png`.

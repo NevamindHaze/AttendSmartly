@@ -237,8 +237,11 @@ jobs:
 
           icon = f"{raw}/AttendSmartly/Assets.xcassets/AppIcon.appiconset/AppIcon.png"
           screenshots = [
-              {"imageURL": f"{raw}/docs/screenshots/{name}.png", "width": 600, "height": 1304}
-              for name in ("home", "today", "subjects")
+              {"imageURL": f"{raw}/docs/sidestore/screenshots/{name}.png", "width": 1242, "height": 2688}
+              for name in (
+                  "light-home", "light-subjects", "light-analytics",
+                  "dark-home", "dark-subjects", "dark-analytics",
+              )
           ]
           now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
