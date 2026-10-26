@@ -97,6 +97,8 @@ struct BAssignment: Codable {
     var dueDate: Int64?
     var completedAt: Int64?
     var createdAt: Int64?
+    var assignedDate: Int64?
+    var hasCustomDue: Bool?
 }
 
 struct ImportResult {
@@ -323,6 +325,8 @@ enum BackupService {
             a.notes = text(b.notes)
             if let done = b.completedAt, done > 0 { a.completedAt = date(fromMillis: done) }
             a.createdAt = date(fromMillis: b.createdAt)
+            if let assigned = b.assignedDate, assigned > 0 { a.assignedDate = date(fromMillis: assigned) }
+            a.hasCustomDue = b.hasCustomDue ?? false
             context.insert(a)
             result.assignments += 1
         }
@@ -412,7 +416,9 @@ enum BackupService {
                     subjectId: a.subjectID.flatMap { subjectIds[$0] },
                     dueDate: millis(a.dueDate),
                     completedAt: a.completedAt.map(millis),
-                    createdAt: millis(a.createdAt)
+                    createdAt: millis(a.createdAt),
+                    assignedDate: millis(a.assignedDate),
+                    hasCustomDue: a.hasCustomDue
                 )
             }
         }

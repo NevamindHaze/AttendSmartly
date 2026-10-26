@@ -28,31 +28,35 @@ enum ReminderService {
         }
     }
 
-    /// A reminder a day before and an hour before each unfinished assignment.
+    /// Reminders for each unfinished assignment: 6 PM the day before, 9 AM on the
+    /// due day, and an hour before it's due.
     @MainActor
-    static func assignmentItems(from assignments: [Assignment], subjects: [Subject], now: Date = Date()) -> [OneOffReminder] {
+    static func assignmentItems(
+        from assignments: [Assignment],
+        subjects: [Subject],
+        now: Date = Date(),
+        calendar: Calendar = .current
+    ) -> [OneOffReminder] {
         var result: [OneOffReminder] = []
         for a in assignments where !a.isCompleted && a.dueDate > now {
             let subject = subjects.first { $0.id == a.subjectID }?.name
             let detail = subject.map { "\($0) · " } ?? ""
-            let dayBefore = a.dueDate.addingTimeInterval(-24 * 60 * 60)
-            if dayBefore > now {
-                result.append(OneOffReminder(
-                    id: "assignment-\(a.id.uuidString)-day",
-                    title: "Due tomorrow: \(a.title)",
-                    body: "\(detail)Due at \(a.dueDate.formatted(date: .omitted, time: .shortened))",
-                    fireDate: dayBefore
-                ))
+            let time = a.dueDate.formatted(date: .omitted, time: .shortened)
+            let dueDay = calendar.startOfDay(for: a.dueDate)
+
+            func add(_ suffix: String, _ title: String, _ body: String, _ date: Date?) {
+                guard let date, date > now, date < a.dueDate else { return }
+                result.append(OneOffReminder(id: "assignment-\(a.id.uuidString)-\(suffix)", title: title, body: body, fireDate: date))
             }
-            let hourBefore = a.dueDate.addingTimeInterval(-60 * 60)
-            if hourBefore > now {
-                result.append(OneOffReminder(
-                    id: "assignment-\(a.id.uuidString)-hour",
-                    title: "Due in 1 hour: \(a.title)",
-                    body: "\(detail)Hand it in by \(a.dueDate.formatted(date: .omitted, time: .shortened))",
-                    fireDate: hourBefore
-                ))
-            }
+
+            let eveBefore = calendar.date(byAdding: .day, value: -1, to: dueDay)
+                .flatMap { calendar.date(bySettingHour: 18, minute: 0, second: 0, of: $0) }
+            add("eve", "Due tomorrow: \(a.title)", "\(detail)Due tomorrow at \(time)", eveBefore)
+
+            let morning = calendar.date(bySettingHour: 9, minute: 0, second: 0, of: dueDay)
+            add("morning", "Due today: \(a.title)", "\(detail)Hand it in by \(time)", morning)
+
+            add("hour", "Due in 1 hour: \(a.title)", "\(detail)Hand it in by \(time)", a.dueDate.addingTimeInterval(-3600))
         }
         return result.sorted { $0.fireDate < $1.fireDate }
     }

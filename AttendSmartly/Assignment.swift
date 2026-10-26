@@ -11,14 +11,38 @@ final class Assignment {
     var notes: String = ""
     var subjectID: UUID?
     var dueDate: Date = Date()
+    /// The day it was set. The due date normally follows from this.
+    var assignedDate: Date = Date()
+    /// true when the due date was picked by hand instead of "assigned + deadline".
+    var hasCustomDue: Bool = false
     /// When it was marked done. nil while it's still to do.
     var completedAt: Date?
     var createdAt: Date = Date()
 
-    init(title: String, dueDate: Date, subjectID: UUID? = nil) {
+    init(title: String, dueDate: Date, subjectID: UUID? = nil, assignedDate: Date? = nil) {
         self.title = title
         self.dueDate = dueDate
         self.subjectID = subjectID
+        self.assignedDate = assignedDate ?? dueDate
+    }
+
+    /// Default number of days you have to hand work in (Settings → Assignments).
+    static var deadlineDays: Int {
+        let value = UserDefaults.standard.integer(forKey: PrefKey.assignmentDeadlineDays)
+        return value > 0 ? value : 7
+    }
+
+    /// The end of the day, `days` days after it was assigned: set on Monday 26 with
+    /// 7 days means due Monday 2 at 11:59 PM.
+    static func dueDate(assignedOn assigned: Date, days: Int, calendar: Calendar = .current) -> Date {
+        let start = calendar.startOfDay(for: assigned)
+        let day = calendar.date(byAdding: .day, value: days, to: start) ?? start
+        return calendar.date(bySettingHour: 23, minute: 59, second: 0, of: day) ?? day
+    }
+
+    /// Whole days left until the due date, counting today as 0 when it's due today.
+    func daysLeft(now: Date = Date(), calendar: Calendar = .current) -> Int {
+        calendar.dateComponents([.day], from: calendar.startOfDay(for: now), to: calendar.startOfDay(for: dueDate)).day ?? 0
     }
 
     var isCompleted: Bool { completedAt != nil }

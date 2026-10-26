@@ -15,6 +15,7 @@ struct SettingsView: View {
     @AppStorage(PrefKey.semesterEnd) private var semesterEnd = ""
     @AppStorage(PrefKey.remindersEnabled) private var remindersEnabled = false
     @AppStorage(PrefKey.assignmentRemindersEnabled) private var assignmentRemindersEnabled = true
+    @AppStorage(PrefKey.assignmentDeadlineDays) private var assignmentDeadlineDays = 7
     @AppStorage(PrefKey.userName) private var userName = "Marshal"
     @AppStorage(PrefKey.profilePhotoVersion) private var photoVersion = 0
 
@@ -75,7 +76,19 @@ struct SettingsView: View {
                 } header: {
                     Text("Reminders")
                 } footer: {
-                    Text("Class reminders arrive before each timetable class (10 minutes by default). Assignment reminders arrive a day before and an hour before each due time.")
+                    Text("Class reminders arrive before each timetable class (10 minutes by default). Assignment reminders arrive at 6 PM the day before, 9 AM on the due day, and an hour before it's due.")
+                }
+
+                Section {
+                    Stepper(
+                        "Deadline: \(assignmentDeadlineDays) \(assignmentDeadlineDays == 1 ? "day" : "days")",
+                        value: $assignmentDeadlineDays,
+                        in: 1...60
+                    )
+                } header: {
+                    Text("Assignments")
+                } footer: {
+                    Text("New assignments are due this many days after they're set, at the end of that day. You can still give any assignment its own due date.")
                 }
 
                 Section {

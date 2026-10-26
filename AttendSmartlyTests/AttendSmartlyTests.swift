@@ -271,6 +271,19 @@ final class AttendSmartlyTests: XCTestCase {
         XCTAssertEqual(AssignmentStatus.doneLate(by: 3 * hour).label, "Done 3 hours late")
     }
 
+    func testDueDateIsEndOfDaySevenDaysAfterItWasSet() throws {
+        var utc = Calendar(identifier: .gregorian)
+        utc.timeZone = try XCTUnwrap(TimeZone(identifier: "UTC"))
+        let assigned = try XCTUnwrap(ISO8601DateFormatter().date(from: "2026-10-26T09:30:00Z"))
+        let due = Assignment.dueDate(assignedOn: assigned, days: 7, calendar: utc)
+        XCTAssertEqual(ISO8601DateFormatter().string(from: due), "2026-11-02T23:59:00Z")
+
+        let a = Assignment(title: "Case report", dueDate: due, assignedDate: assigned)
+        let thursday = try XCTUnwrap(ISO8601DateFormatter().date(from: "2026-10-29T10:00:00Z"))
+        XCTAssertEqual(a.daysLeft(now: thursday, calendar: utc), 4)
+        XCTAssertEqual(a.daysLeft(now: due, calendar: utc), 0)
+    }
+
     func testAssignmentsSurviveBackupRoundTripWithoutDuplicates() throws {
         let container = try makeContainer()
         let context = ModelContext(container)

@@ -151,6 +151,9 @@ struct AssignmentRow: View {
                 Label("Due \(AssignmentFormat.due(assignment.dueDate, now: now))", systemImage: "calendar")
                     .font(.footnote)
                     .opacity(0.75)
+                if !assignment.isCompleted {
+                    DeadlineBar(assignment: assignment, now: now)
+                }
                 Label(status.label, systemImage: status.symbol)
                     .font(.caption.weight(.bold))
                     .padding(.horizontal, 10)
@@ -182,30 +185,36 @@ struct AssignmentFormView: View {
 
     @State private var title: String
     @State private var subjectID: UUID?
+    @State private var assigned: Date
+    @State private var customDue: Bool
     @State private var due: Date
     @State private var notes: String
     @State private var isDone: Bool
     @State private var doneAt: Date
 
+    private let deadlineDays = Assignment.deadlineDays
+
     init(assignment: Assignment?, defaultSubject: UUID?) {
         self.assignment = assignment
+        let assigned = assignment?.assignedDate ?? Date()
         _title = State(initialValue: assignment?.title ?? "")
         _subjectID = State(initialValue: assignment?.subjectID ?? defaultSubject)
-        _due = State(initialValue: assignment?.dueDate ?? Self.defaultDue())
+        _assigned = State(initialValue: assigned)
+        _customDue = State(initialValue: assignment?.hasCustomDue ?? false)
+        _due = State(initialValue: assignment?.dueDate
+            ?? Assignment.dueDate(assignedOn: assigned, days: Assignment.deadlineDays))
         _notes = State(initialValue: assignment?.notes ?? "")
         _isDone = State(initialValue: assignment?.isCompleted ?? false)
         _doneAt = State(initialValue: assignment?.completedAt ?? Date())
     }
 
-    /// Tomorrow at 11:59 PM.
-    private static func defaultDue() -> Date {
-        let calendar = Calendar.current
-        let tomorrow = calendar.date(byAdding: .day, value: 1, to: Date()) ?? Date()
-        return calendar.date(bySettingHour: 23, minute: 59, second: 0, of: tomorrow) ?? tomorrow
+    /// The due date that will be saved.
+    private var effectiveDue: Date {
+        customDue ? due : Assignment.dueDate(assignedOn: assigned, days: deadlineDays)
     }
 
     var body: some View {
-        let preview = AssignmentStatus.of(due: due, completedAt: isDone ? doneAt : nil, now: Date())
+        let preview = AssignmentStatus.of(due: effectiveDue, completedAt: isDone ? doneAt : nil, now: Date())
         NavigationStack {
             Form {
                 Section {
@@ -219,15 +228,23 @@ struct AssignmentFormView: View {
                     }
                 }
 
-                Section("Due") {
-                    DatePicker("Due", selection: $due)
-                    HStack(spacing: 8) {
-                        quickDue("Today", days: 0)
-                        quickDue("Tomorrow", days: 1)
-                        quickDue("In a week", days: 7)
+                Section {
+                    DatePicker("Assigned on", selection: $assigned, displayedComponents: .date)
+                    if customDue {
+                        DatePicker("Due", selection: $due, in: assigned...)
+                    } else {
+                        LabeledContent("Due", value: AssignmentFormat.due(effectiveDue))
                     }
-                    .buttonStyle(.bordered)
-                    .font(.footnote.weight(.semibold))
+                    Toggle("Different deadline", isOn: $customDue.animation())
+                } header: {
+                    Text("Deadline")
+                } footer: {
+                    Text(customDue
+                         ? "This one has its own due date."
+                         : "Due \(deadlineDays) days after it was set, at the end of that day. Change the usual length in Settings → Assignments.")
+                }
+                .onChange(of: customDue) { _, isCustom in
+                    if isCustom { due = Assignment.dueDate(assignedOn: assigned, days: deadlineDays) }
                 }
 
                 Section {
@@ -268,19 +285,13 @@ struct AssignmentFormView: View {
         }
     }
 
-    private func quickDue(_ title: String, days: Int) -> some View {
-        Button(title) {
-            let calendar = Calendar.current
-            let day = calendar.date(byAdding: .day, value: days, to: Date()) ?? Date()
-            due = calendar.date(bySettingHour: 23, minute: 59, second: 0, of: day) ?? day
-        }
-    }
-
     private func save() {
-        let target = assignment ?? Assignment(title: "", dueDate: due)
+        let target = assignment ?? Assignment(title: "", dueDate: effectiveDue)
         target.title = title.trimmingCharacters(in: .whitespacesAndNewlines)
         target.subjectID = subjectID
-        target.dueDate = due
+        target.assignedDate = Calendar.current.startOfDay(for: assigned)
+        target.hasCustomDue = customDue
+        target.dueDate = effectiveDue
         target.notes = notes.trimmingCharacters(in: .whitespacesAndNewlines)
         target.completedAt = isDone ? doneAt : nil
         if assignment == nil { context.insert(target) }
@@ -381,5 +392,42 @@ struct HomeAssignmentsCard: View {
             highlight ? Pastel.surface.opacity(0.9) : Pastel.surface.opacity(0.5),
             in: RoundedRectangle(cornerRadius: 14, style: .continuous)
         )
+    }
+}
+
+// MARK: - Deadline bar
+
+/// How much of the time to hand it in has gone: "Set Mon 26 Oct · 5 days left".
+struct DeadlineBar: View {
+    let assignment: Assignment
+    let now: Date
+
+    var body: some View {
+        let start = Calendar.current.startOfDay(for: assignment.assignedDate)
+        let total = max(assignment.dueDate.timeIntervalSince(start), 1)
+        let used = min(max(now.timeIntervalSince(start) / total, 0), 1)
+        let left = assignment.daysLeft(now: now)
+        let leftText: String = {
+            if assignment.dueDate < now { return "Past the deadline" }
+            if left <= 0 { return "Last day" }
+            return left == 1 ? "1 day left" : "\(left) days left"
+        }()
+
+        VStack(alignment: .leading, spacing: 4) {
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Pastel.ink.opacity(0.12))
+                    Capsule()
+                        .fill(Pastel.ink.opacity(0.8))
+                        .frame(width: max(6, geo.size.width * used))
+                }
+            }
+            .frame(height: 6)
+            Text("Set \(assignment.assignedDate.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated)))  ·  \(leftText)")
+                .font(.caption2.weight(.semibold))
+                .opacity(0.7)
+        }
+        .frame(maxWidth: 260, alignment: .leading)
+        .accessibilityElement(children: .combine)
     }
 }
