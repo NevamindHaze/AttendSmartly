@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A20000000000000000000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000002 /* Assets.xcassets */; };
 		B20000000000000000000001 /* AttendSmartlyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000011 /* AttendSmartlyTests.swift */; };
 		B20000000000000000000002 /* android-backup.json in Resources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000013 /* android-backup.json */; };
 		A10000000000000000000001 /* AttendSmartlyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000011 /* AttendSmartlyApp.swift */; };
@@ -27,6 +28,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		A20000000000000000000002 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		B20000000000000000000011 /* AttendSmartlyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttendSmartlyTests.swift; sourceTree = "<group>"; };
 		B20000000000000000000012 /* AttendSmartlyTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AttendSmartlyTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B20000000000000000000013 /* android-backup.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = android-backup.json; sourceTree = "<group>"; };
@@ -86,6 +88,7 @@
 				A10000000000000000000110 /* ReminderService.swift */,
 				A10000000000000000000111 /* HolidaysView.swift */,
 				A10000000000000000000112 /* ExtraClassViews.swift */,
+				A20000000000000000000002 /* Assets.xcassets */,
 			);
 		};
 		A10000000000000000000033 /* Products */ = {
@@ -211,6 +214,7 @@
 
 /* Begin PBXResourcesBuildPhase section */
 		A10000000000000000000052 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (
+			A20000000000000000000001 /* Assets.xcassets in Resources */,
 		); runOnlyForDeploymentPostprocessing = 0; };
 		B20000000000000000000023 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (
 			B20000000000000000000002 /* android-backup.json in Resources */,
