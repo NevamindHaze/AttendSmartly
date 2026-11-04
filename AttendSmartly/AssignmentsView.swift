@@ -15,6 +15,7 @@ struct AssignmentsView: View {
     @State private var editing: Assignment?
     @State private var showNew = false
     @State private var toDelete: Assignment?
+    @State private var expanded: Set<UUID> = []
     @AppStorage(PrefKey.assignmentGrouping) private var grouping = AssignmentGrouping.due.rawValue
 
     var body: some View {
@@ -36,23 +37,25 @@ struct AssignmentsView: View {
                 .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
             }
 
-            if showDone {
-                if done.isEmpty {
+            let items = showDone ? done : open
+            if items.isEmpty {
+                if showDone {
                     empty("checkmark.circle", "Nothing finished yet", "Tick the circle on an assignment when you hand it in.")
                 } else {
-                    ForEach(done) { row($0, now: now) }
+                    empty("tray", "You're all caught up", "Tap + to add an assignment and its due date.")
                 }
-            } else if open.isEmpty {
-                empty("tray", "You're all caught up", "Tap + to add an assignment and its due date.")
             } else if grouping == AssignmentGrouping.subject.rawValue {
-                ForEach(subjects.filter { s in open.contains { $0.subjectID == s.id } }) { s in
-                    group(s.name, open.filter { $0.subjectID == s.id }, now: now)
+                ForEach(subjects.filter { s in items.contains { $0.subjectID == s.id } }) { s in
+                    group(s.name, items.filter { $0.subjectID == s.id }, now: now, dot: s.colorValue)
                 }
-                group("No subject", open.filter { a in !subjects.contains { $0.id == a.subjectID } }, now: now)
+                group("No subject", items.filter { a in !subjects.contains { $0.id == a.subjectID } }, now: now)
             } else if grouping == AssignmentGrouping.type.rawValue {
                 ForEach(AssignmentKind.allCases) { kind in
-                    group(kind.rawValue, open.filter { $0.kindValue == kind }, now: now)
+                    group(kind.rawValue, items.filter { $0.kindValue == kind }, now: now, symbol: kind.symbol)
                 }
+            } else if showDone {
+                group("Handed in late", done.filter { if case .doneLate = $0.status(now: now) { return true }; return false }, now: now)
+                group("Handed in on time", done.filter { $0.status(now: now) == .doneOnTime }, now: now)
             } else {
                 group("Overdue", open.filter { if case .overdue = $0.status(now: now) { return true }; return false }, now: now)
                 group("Due today", open.filter { $0.status(now: now) == .dueToday }, now: now)
@@ -96,30 +99,48 @@ struct AssignmentsView: View {
     }
 
     @ViewBuilder
-    private func group(_ title: String, _ items: [Assignment], now: Date) -> some View {
+    private func group(_ title: String, _ items: [Assignment], now: Date, dot: Int? = nil, symbol: String? = nil) -> some View {
         if !items.isEmpty {
             Section {
                 ForEach(items) { row($0, now: now) }
             } header: {
-                Text(title)
-                    .font(.system(.subheadline, design: .rounded).weight(.bold))
-                    .foregroundStyle(Pastel.ink)
-                    .textCase(nil)
-                    .padding(.leading, 4)
+                HStack(spacing: 6) {
+                    if let dot { Circle().fill(Pastel.subjectStrong(dot)).frame(width: 10, height: 10) }
+                    if let symbol { Image(systemName: symbol) }
+                    Text(title)
+                    Text("\(items.count)").opacity(0.5)
+                }
+                .font(.system(.subheadline, design: .rounded).weight(.bold))
+                .foregroundStyle(Pastel.ink)
+                .textCase(nil)
+                .padding(.leading, 4)
             }
             .listSectionSeparator(.hidden)
         }
     }
 
     private func row(_ assignment: Assignment, now: Date) -> some View {
-        AssignmentRow(
+        let subject = subjects.first { $0.id == assignment.subjectID }
+        let isOpen = expanded.contains(assignment.id)
+        return AssignmentRow(
             assignment: assignment,
-            subject: subjects.first { $0.id == assignment.subjectID },
-            now: now
+            subject: subject,
+            now: now,
+            isExpanded: isOpen,
+            onEdit: { editing = assignment }
         )
         .contentShape(Rectangle())
-        .onTapGesture { editing = assignment }
-        .pastelRow(assignment.status(now: now).tile)
+        .onTapGesture {
+            withAnimation(.snappy) {
+                if isOpen { expanded.remove(assignment.id) } else { expanded.insert(assignment.id) }
+            }
+        }
+        .accessibilityHint(isOpen ? "Hides the details" : "Shows the details")
+        .pastelRow(subject.map { Pastel.subject($0.colorValue) } ?? Pastel.surface, vertical: 12)
+        .swipeActions(edge: .leading) {
+            Button { editing = assignment } label: { Label("Edit", systemImage: "pencil") }
+                .tint(DashboardPalette.blue)
+        }
         .swipeActions(edge: .trailing) {
             Button(role: .destructive) { toDelete = assignment } label: {
                 Label("Delete", systemImage: "trash")
@@ -154,54 +175,84 @@ struct AssignmentRow: View {
     let assignment: Assignment
     let subject: Subject?
     let now: Date
+    var isExpanded = false
+    var onEdit: () -> Void = {}
 
     var body: some View {
         let status = assignment.status(now: now)
-        HStack(alignment: .top, spacing: 14) {
+        let kind = assignment.kindValue
+        HStack(alignment: .top, spacing: 12) {
             Button(action: toggle) {
                 Image(systemName: assignment.isCompleted ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 28, weight: .semibold))
+                    .font(.system(size: 24, weight: .semibold))
                     .foregroundStyle(assignment.isCompleted ? status.tint : Pastel.ink.opacity(0.55))
-                    .frame(width: 34, height: 34)
+                    .frame(width: 30, height: 30)
                     .contentShape(Circle())
             }
             .buttonStyle(.plain)
             .sensoryFeedback(.success, trigger: assignment.isCompleted)
             .accessibilityLabel(assignment.isCompleted ? "Mark as not done" : "Mark as done")
 
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(assignment.displayTitle)
-                    .font(.system(.headline, design: .rounded).weight(.bold))
+                    .font(.system(.subheadline, design: .rounded).weight(.bold))
                     .strikethrough(assignment.isCompleted, color: Pastel.ink.opacity(0.5))
-                HStack(spacing: 6) {
-                    Label(assignment.kindValue.rawValue, systemImage: assignment.kindValue.symbol)
+                    .lineLimit(isExpanded ? nil : 1)
+                HStack(spacing: 5) {
+                    Image(systemName: kind.symbol)
                     if let subject {
+                        Text(subject.name).lineLimit(1)
                         Text("·")
-                        Circle().fill(Pastel.subjectStrong(subject.colorValue)).frame(width: 8, height: 8)
-                        Text(subject.name)
                     }
+                    Text(AssignmentFormat.due(assignment.dueDate, now: now)).lineLimit(1)
                 }
-                .font(.footnote.weight(.medium))
+                .font(.caption.weight(.medium))
                 .opacity(0.75)
-                if !assignment.instructor.isEmpty {
-                    Label(assignment.instructor, systemImage: "person")
-                        .font(.footnote)
-                        .opacity(0.75)
-                }
-                Label("Due \(AssignmentFormat.due(assignment.dueDate, now: now))", systemImage: "calendar")
+
+                if isExpanded {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Label(kind.rawValue, systemImage: kind.symbol)
+                        if !assignment.instructor.isEmpty {
+                            Label(assignment.instructor, systemImage: "person")
+                        }
+                        Label("Due \(AssignmentFormat.due(assignment.dueDate, now: now))", systemImage: "calendar")
+                        if !assignment.notes.isEmpty {
+                            Label(assignment.notes, systemImage: "note.text")
+                        }
+                        if !assignment.isCompleted {
+                            DeadlineBar(assignment: assignment, now: now)
+                        }
+                        HStack {
+                            Label(status.label, systemImage: status.symbol)
+                                .font(.caption.weight(.bold))
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 5)
+                                .background(status.tint, in: Capsule())
+                                .foregroundStyle(.white)
+                            Spacer()
+                            Button("Edit", systemImage: "pencil", action: onEdit)
+                                .font(.caption.weight(.bold))
+                                .buttonStyle(.bordered)
+                                .buttonBorderShape(.capsule)
+                                .tint(Pastel.ink)
+                        }
+                    }
                     .font(.footnote)
-                    .opacity(0.75)
-                if !assignment.isCompleted {
-                    DeadlineBar(assignment: assignment, now: now)
+                    .padding(.top, 4)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
                 }
-                Label(status.label, systemImage: status.symbol)
-                    .font(.caption.weight(.bold))
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
-                    .background(status.tint, in: Capsule())
-                    .foregroundStyle(.white)
             }
             Spacer(minLength: 0)
+
+            if !isExpanded {
+                // Status at a glance; the full wording shows when expanded.
+                Image(systemName: status.symbol)
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(.white)
+                    .frame(width: 26, height: 26)
+                    .background(status.tint, in: Circle())
+                    .accessibilityLabel(status.label)
+            }
         }
         .foregroundStyle(Pastel.ink)
     }

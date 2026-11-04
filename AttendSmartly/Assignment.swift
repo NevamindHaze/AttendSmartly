@@ -177,17 +177,6 @@ enum AssignmentStatus: Equatable {
         }
     }
 
-    /// Soft tile colour, matching the rest of the app.
-    var tile: Color {
-        switch self {
-        case .overdue: return Pastel.pink
-        case .dueToday, .dueSoon: return Pastel.butter
-        case .upcoming: return Pastel.sky
-        case .doneOnTime: return Pastel.mint
-        case .doneLate: return Pastel.peach
-        }
-    }
-
     /// "3 days", "5 hours", "20 minutes".
     static func duration(_ seconds: TimeInterval) -> String {
         let minutes = Int(seconds / 60)
