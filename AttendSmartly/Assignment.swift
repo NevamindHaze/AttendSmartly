@@ -66,6 +66,17 @@ final class Assignment {
         return (used.max() ?? 0) + 1
     }
 
+    /// Instructors already used for this subject, best guess first: same type, then newest.
+    static func knownInstructors(subjectID: UUID?, kind: AssignmentKind, among existing: [Assignment], excluding: Assignment? = nil) -> [String] {
+        guard subjectID != nil else { return [] }
+        var seen = Set<String>()
+        return existing
+            .filter { $0 !== excluding && $0.subjectID == subjectID && !$0.instructor.isEmpty }
+            .sorted { ($0.kindValue == kind ? 0 : 1, $1.createdAt) < ($1.kindValue == kind ? 0 : 1, $0.createdAt) }
+            .map(\.instructor)
+            .filter { seen.insert($0.lowercased()).inserted }
+    }
+
     func status(now: Date = Date()) -> AssignmentStatus {
         AssignmentStatus.of(due: dueDate, completedAt: completedAt, now: now)
     }
@@ -163,17 +174,6 @@ enum AssignmentStatus: Equatable {
         case .dueToday, .dueSoon: return DashboardPalette.amber
         case .upcoming: return DashboardPalette.blue
         case .doneOnTime: return DashboardPalette.green
-        }
-    }
-
-    /// Soft tile colour, matching the rest of the app.
-    var tile: Color {
-        switch self {
-        case .overdue: return Pastel.pink
-        case .dueToday, .dueSoon: return Pastel.butter
-        case .upcoming: return Pastel.sky
-        case .doneOnTime: return Pastel.mint
-        case .doneLate: return Pastel.peach
         }
     }
 

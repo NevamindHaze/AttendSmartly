@@ -304,6 +304,29 @@ final class AttendSmartlyTests: XCTestCase {
         XCTAssertEqual(other.displayTitle, "Practical 9: Essay")
     }
 
+    func testKnownInstructorsPreferSameTypeThenNewest() throws {
+        let surgery = UUID()
+        func make(_ name: String, _ kind: AssignmentKind, _ age: TimeInterval) -> Assignment {
+            let a = Assignment(title: "x", dueDate: Date(), subjectID: surgery)
+            a.kind = kind.rawValue
+            a.instructor = name
+            a.createdAt = Date(timeIntervalSince1970: 1_000_000 - age)
+            return a
+        }
+        let all = [
+            make("Dr. Old", .practical, 300),
+            make("Dr. Rao", .practical, 100),
+            make("Dr. Lee", .assignment, 0),
+            make("dr. rao", .assignment, 50),
+            make("", .practical, 0)
+        ]
+
+        XCTAssertEqual(Assignment.knownInstructors(subjectID: surgery, kind: .practical, among: all), ["Dr. Rao", "Dr. Old", "Dr. Lee"])
+        XCTAssertEqual(Assignment.knownInstructors(subjectID: surgery, kind: .assignment, among: all), ["Dr. Lee", "dr. rao", "Dr. Old"])
+        XCTAssertEqual(Assignment.knownInstructors(subjectID: UUID(), kind: .practical, among: all), [])
+        XCTAssertEqual(Assignment.knownInstructors(subjectID: nil, kind: .practical, among: all), [])
+    }
+
     func testAssignmentsSurviveBackupRoundTripWithoutDuplicates() throws {
         let container = try makeContainer()
         let context = ModelContext(container)
