@@ -25,8 +25,9 @@ permissions:
 jobs:
   build:
     name: Build iOS Simulator App
-    runs-on: macos-latest
-    timeout-minutes: 20
+    # shortcut: Intel runner while macOS arm64 runners can't be acquired (Nov 2026); back to macos-latest once they can.
+    runs-on: macos-15-intel
+    timeout-minutes: 40
 
     steps:
       - name: Check out repository
@@ -137,8 +138,9 @@ jobs:
 
   build-device-ipa:
     name: Build Unsigned iOS Device IPA
-    runs-on: macos-latest
-    timeout-minutes: 20
+    # shortcut: Intel runner while macOS arm64 runners can't be acquired (Nov 2026); back to macos-latest once they can.
+    runs-on: macos-15-intel
+    timeout-minutes: 40
     permissions:
       contents: write
 
