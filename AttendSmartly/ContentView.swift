@@ -123,7 +123,7 @@ struct ContentView: View {
             parts.append(key)
         }
         for a in assignments where !a.isCompleted {
-            parts.append("a|\(a.id)|\(a.title)|\(a.dueDate.timeIntervalSince1970)|\(a.subjectID?.uuidString ?? "")")
+            parts.append("a|\(a.id)|\(a.displayTitle)|\(a.dueDate.timeIntervalSince1970)|\(a.subjectID?.uuidString ?? "")")
         }
         parts.sort()
         return "\(remindersEnabled)|\(assignmentRemindersEnabled)#" + parts.joined(separator: ";")
