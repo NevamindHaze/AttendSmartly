@@ -218,6 +218,8 @@ struct SubjectFormView: View {
     @Environment(\.dismiss) private var dismiss
 
     let subject: Subject?
+    /// Called with the subject after a successful save.
+    var onSave: ((Subject) -> Void)? = nil
 
     @State private var name: String
     @State private var code: String
@@ -236,8 +238,9 @@ struct SubjectFormView: View {
         0xFF9C27B0, 0xFF009688, 0xFFF44336, 0xFF607D8B
     ]
 
-    init(subject: Subject?) {
+    init(subject: Subject?, onSave: ((Subject) -> Void)? = nil) {
         self.subject = subject
+        self.onSave = onSave
         _name = State(initialValue: subject?.name ?? "")
         _code = State(initialValue: subject?.code ?? "")
         _type = State(initialValue: subject?.type ?? "Lecture")
@@ -333,6 +336,7 @@ struct SubjectFormView: View {
         if subject == nil { context.insert(target_) }
         do {
             try context.save()
+            onSave?(target_)
             dismiss()
         } catch {
             errorText = error.localizedDescription
