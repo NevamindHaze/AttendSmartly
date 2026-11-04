@@ -66,6 +66,17 @@ final class Assignment {
         return (used.max() ?? 0) + 1
     }
 
+    /// Instructors already used for this subject, best guess first: same type, then newest.
+    static func knownInstructors(subjectID: UUID?, kind: AssignmentKind, among existing: [Assignment], excluding: Assignment? = nil) -> [String] {
+        guard subjectID != nil else { return [] }
+        var seen = Set<String>()
+        return existing
+            .filter { $0 !== excluding && $0.subjectID == subjectID && !$0.instructor.isEmpty }
+            .sorted { ($0.kindValue == kind ? 0 : 1, $1.createdAt) < ($1.kindValue == kind ? 0 : 1, $0.createdAt) }
+            .map(\.instructor)
+            .filter { seen.insert($0.lowercased()).inserted }
+    }
+
     func status(now: Date = Date()) -> AssignmentStatus {
         AssignmentStatus.of(due: dueDate, completedAt: completedAt, now: now)
     }

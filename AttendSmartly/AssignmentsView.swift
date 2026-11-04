@@ -230,6 +230,8 @@ struct AssignmentFormView: View {
     @State private var number: Int
     @State private var instructor: String
     @State private var showNewSubject = false
+    /// The instructor the app last filled in, so it can be swapped while you haven't typed your own.
+    @State private var autoInstructor = ""
     @State private var subjectID: UUID?
     @State private var assigned: Date
     @State private var customDue: Bool
@@ -282,26 +284,36 @@ struct AssignmentFormView: View {
                         Label("New subject", systemImage: "plus.circle")
                     }
                     Stepper(number > 0 ? "Number: \(number)" : "Not numbered", value: $number, in: 0...999)
-                    TextField("Course instructor", text: $instructor)
-                        .textContentType(.name)
+                    HStack {
+                        TextField("Course instructor", text: $instructor)
+                            .textContentType(.name)
+                        if !instructorSuggestions.isEmpty {
+                            Menu {
+                                ForEach(instructorSuggestions, id: \.self) { name in
+                                    Button(name) { instructor = name }
+                                }
+                            } label: {
+                                Image(systemName: "person.crop.circle.badge.checkmark")
+                            }
+                            .accessibilityLabel("Suggested instructors")
+                        }
+                    }
                 } footer: {
                     Text((number > 0
                           ? "Shows as \(AssignmentKind.display(kind: kind, number: number, title: title.trimmingCharacters(in: .whitespacesAndNewlines))). "
                           : "") + "A new subject added here has no classes until you put it in your timetable.")
                 }
-                .onChange(of: kind) { renumber() }
-                .onChange(of: subjectID) { old, new in
+                .onChange(of: kind) {
                     renumber()
-                    // Follow the subject's teacher unless it was typed by hand.
-                    let oldTeacher = subjects.first { $0.id == old }?.teacherName ?? ""
-                    if instructor.isEmpty || instructor == oldTeacher {
-                        instructor = subjects.first { $0.id == new }?.teacherName ?? ""
-                    }
+                    recommendInstructor()
+                }
+                .onChange(of: subjectID) {
+                    renumber()
+                    recommendInstructor()
                 }
                 .onAppear {
-                    guard assignment == nil else { return }
                     renumber()
-                    if instructor.isEmpty { instructor = subjects.first { $0.id == subjectID }?.teacherName ?? "" }
+                    recommendInstructor()
                 }
 
                 Section {
@@ -351,7 +363,10 @@ struct AssignmentFormView: View {
             }
             .sheet(isPresented: $showNewSubject) {
                 SubjectFormView(subject: nil) { s in
-                    if instructor.isEmpty { instructor = s.teacherName }
+                    if instructor.isEmpty || instructor == autoInstructor {
+                        instructor = s.teacherName
+                        autoInstructor = ""  // so the subject change below doesn't clear it
+                    }
                     subjectID = s.id
                 }
             }
@@ -371,6 +386,23 @@ struct AssignmentFormView: View {
     private func renumber() {
         guard assignment == nil, autoNumber else { return }
         number = Assignment.nextNumber(subjectID: subjectID, kind: kind, among: allAssignments)
+    }
+
+    /// Names used before for this subject and type, then the subject's teacher.
+    private var instructorSuggestions: [String] {
+        var names = Assignment.knownInstructors(subjectID: subjectID, kind: kind, among: allAssignments, excluding: assignment)
+        if let teacher = subjects.first(where: { $0.id == subjectID })?.teacherName, !teacher.isEmpty,
+           !names.contains(where: { $0.caseInsensitiveCompare(teacher) == .orderedSame }) {
+            names.append(teacher)
+        }
+        return names
+    }
+
+    /// Fill in the best guess, unless you've typed a different name yourself.
+    private func recommendInstructor() {
+        let best = instructorSuggestions.first ?? ""
+        if instructor.isEmpty || instructor == autoInstructor { instructor = best }
+        autoInstructor = best
     }
 
     private func save() {
