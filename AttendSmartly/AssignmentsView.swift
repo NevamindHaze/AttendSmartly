@@ -229,6 +229,7 @@ struct AssignmentFormView: View {
     @State private var kind: AssignmentKind
     @State private var number: Int
     @State private var instructor: String
+    @State private var showNewSubject = false
     @State private var subjectID: UUID?
     @State private var assigned: Date
     @State private var customDue: Bool
@@ -277,13 +278,16 @@ struct AssignmentFormView: View {
                             Text(s.name).tag(Optional(s.id))
                         }
                     }
+                    Button { showNewSubject = true } label: {
+                        Label("New subject", systemImage: "plus.circle")
+                    }
                     Stepper(number > 0 ? "Number: \(number)" : "Not numbered", value: $number, in: 0...999)
                     TextField("Course instructor", text: $instructor)
                         .textContentType(.name)
                 } footer: {
-                    if number > 0 {
-                        Text("Shows as \(AssignmentKind.display(kind: kind, number: number, title: title.trimmingCharacters(in: .whitespacesAndNewlines))).")
-                    }
+                    Text((number > 0
+                          ? "Shows as \(AssignmentKind.display(kind: kind, number: number, title: title.trimmingCharacters(in: .whitespacesAndNewlines))). "
+                          : "") + "A new subject added here has no classes until you put it in your timetable.")
                 }
                 .onChange(of: kind) { renumber() }
                 .onChange(of: subjectID) { old, new in
@@ -343,6 +347,12 @@ struct AssignmentFormView: View {
                             dismiss()
                         }
                     }
+                }
+            }
+            .sheet(isPresented: $showNewSubject) {
+                SubjectFormView(subject: nil) { s in
+                    if instructor.isEmpty { instructor = s.teacherName }
+                    subjectID = s.id
                 }
             }
             .navigationTitle(assignment == nil ? "New Assignment" : "Edit Assignment")
