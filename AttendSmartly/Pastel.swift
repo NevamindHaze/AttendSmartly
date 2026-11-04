@@ -109,10 +109,10 @@ struct TilePill: View {
 
 extension View {
     /// Turns a List row into a coloured tile with space around it.
-    func pastelRow(_ color: Color, vertical: CGFloat = 16) -> some View {
+    func pastelRow(_ color: Color) -> some View {
         self
             .listRowSeparator(.hidden)
-            .listRowInsets(EdgeInsets(top: vertical, leading: 32, bottom: vertical, trailing: 32))
+            .listRowInsets(EdgeInsets(top: 16, leading: 32, bottom: 16, trailing: 32))
             .listRowBackground(
                 RoundedRectangle(cornerRadius: 26, style: .continuous)
                     .fill(color)
