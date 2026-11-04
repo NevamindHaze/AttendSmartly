@@ -284,6 +284,26 @@ final class AttendSmartlyTests: XCTestCase {
         XCTAssertEqual(a.daysLeft(now: due, calendar: utc), 0)
     }
 
+    func testNextNumberCountsPerSubjectAndKind() throws {
+        let surgery = UUID(), anatomy = UUID()
+        let p1 = Assignment(title: "", dueDate: Date(), subjectID: surgery)
+        p1.kind = AssignmentKind.practical.rawValue
+        p1.number = 1
+        let p4 = Assignment(title: "", dueDate: Date(), subjectID: surgery)
+        p4.kind = AssignmentKind.practical.rawValue
+        p4.number = 4
+        let other = Assignment(title: "Essay", dueDate: Date(), subjectID: anatomy)
+        other.kind = AssignmentKind.practical.rawValue
+        other.number = 9
+        let all = [p1, p4, other]
+
+        XCTAssertEqual(Assignment.nextNumber(subjectID: surgery, kind: .practical, among: all), 5)
+        XCTAssertEqual(Assignment.nextNumber(subjectID: surgery, kind: .project, among: all), 1)
+        XCTAssertEqual(Assignment.nextNumber(subjectID: surgery, kind: .practical, among: all, excluding: p4), 2)
+        XCTAssertEqual(p4.displayTitle, "Practical 4")
+        XCTAssertEqual(other.displayTitle, "Practical 9: Essay")
+    }
+
     func testAssignmentsSurviveBackupRoundTripWithoutDuplicates() throws {
         let container = try makeContainer()
         let context = ModelContext(container)
@@ -292,6 +312,9 @@ final class AttendSmartlyTests: XCTestCase {
         let due = Date(timeIntervalSince1970: 1_793_000_000)
         let done = Assignment(title: "Case report", dueDate: due, subjectID: subject.id)
         done.completedAt = due.addingTimeInterval(-3600)
+        done.kind = AssignmentKind.practical.rawValue
+        done.number = 3
+        done.instructor = "Dr. Rao"
         context.insert(done)
         context.insert(Assignment(title: "Reading log", dueDate: due.addingTimeInterval(86_400)))
         try context.save()
@@ -302,7 +325,8 @@ final class AttendSmartlyTests: XCTestCase {
         let first = try BackupService.importData(exported, into: fresh, replaceExisting: true)
         XCTAssertEqual(first.assignments, 2)
         let restored = try fresh.fetch(FetchDescriptor<Assignment>(sortBy: [SortDescriptor(\.dueDate)]))
-        XCTAssertEqual(restored.map(\.title), ["Case report", "Reading log"])
+        XCTAssertEqual(restored.map(\.displayTitle), ["Practical 3: Case report", "Reading log"])
+        XCTAssertEqual(restored.first?.instructor, "Dr. Rao")
         let restoredSubject = try XCTUnwrap(fresh.fetch(FetchDescriptor<Subject>()).first)
         XCTAssertEqual(restored.first?.subjectID, restoredSubject.id)
         XCTAssertEqual(restored.first?.status(now: due), .doneOnTime)

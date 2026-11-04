@@ -16,6 +16,7 @@ struct SettingsView: View {
     @AppStorage(PrefKey.remindersEnabled) private var remindersEnabled = false
     @AppStorage(PrefKey.assignmentRemindersEnabled) private var assignmentRemindersEnabled = true
     @AppStorage(PrefKey.assignmentDeadlineDays) private var assignmentDeadlineDays = 7
+    @AppStorage(PrefKey.assignmentAutoNumber) private var assignmentAutoNumber = true
     @AppStorage(PrefKey.userName) private var userName = "Marshal"
     @AppStorage(PrefKey.profilePhotoVersion) private var photoVersion = 0
 
@@ -85,10 +86,11 @@ struct SettingsView: View {
                         value: $assignmentDeadlineDays,
                         in: 1...60
                     )
+                    Toggle("Number automatically", isOn: $assignmentAutoNumber)
                 } header: {
                     Text("Assignments")
                 } footer: {
-                    Text("New assignments are due this many days after they're set, at the end of that day. You can still give any assignment its own due date.")
+                    Text("New assignments are due this many days after they're set, at the end of that day. You can still give any assignment its own due date. With automatic numbering, a new practical, assignment or project gets the next number for its subject, like Practical 4.")
                 }
 
                 Section {

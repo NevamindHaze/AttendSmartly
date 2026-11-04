@@ -99,6 +99,9 @@ struct BAssignment: Codable {
     var createdAt: Int64?
     var assignedDate: Int64?
     var hasCustomDue: Bool?
+    var kind: String?
+    var number: Int?
+    var instructor: String?
 }
 
 struct ImportResult {
@@ -311,13 +314,16 @@ enum BackupService {
         }
 
         let existingAssignments = Set(try context.fetch(FetchDescriptor<Assignment>()).map {
-            key($0.title) + "|" + String(Int64($0.dueDate.timeIntervalSince1970 / 60))
+            key($0.displayTitle) + "|" + String(Int64($0.dueDate.timeIntervalSince1970 / 60))
         })
         for b in backup.assignments ?? [] {
             let title = text(b.title)
-            guard !title.isEmpty, let dueMillis = b.dueDate, dueMillis > 0 else { result.skipped += 1; continue }
+            let kind = AssignmentKind(rawValue: b.kind ?? "") ?? .assignment
+            let number = max(b.number ?? 0, 0)
+            guard !title.isEmpty || number > 0, let dueMillis = b.dueDate, dueMillis > 0 else { result.skipped += 1; continue }
             let due = date(fromMillis: dueMillis)
-            if existingAssignments.contains(key(title) + "|" + String(Int64(due.timeIntervalSince1970 / 60))) {
+            let shown = AssignmentKind.display(kind: kind, number: number, title: title)
+            if existingAssignments.contains(key(shown) + "|" + String(Int64(due.timeIntervalSince1970 / 60))) {
                 result.alreadyPresent += 1
                 continue
             }
@@ -327,6 +333,9 @@ enum BackupService {
             a.createdAt = date(fromMillis: b.createdAt)
             if let assigned = b.assignedDate, assigned > 0 { a.assignedDate = date(fromMillis: assigned) }
             a.hasCustomDue = b.hasCustomDue ?? false
+            a.kind = kind.rawValue
+            a.number = number
+            a.instructor = text(b.instructor)
             context.insert(a)
             result.assignments += 1
         }
@@ -418,7 +427,10 @@ enum BackupService {
                     completedAt: a.completedAt.map(millis),
                     createdAt: millis(a.createdAt),
                     assignedDate: millis(a.assignedDate),
-                    hasCustomDue: a.hasCustomDue
+                    hasCustomDue: a.hasCustomDue,
+                    kind: a.kind,
+                    number: a.number,
+                    instructor: a.instructor
                 )
             }
         }
