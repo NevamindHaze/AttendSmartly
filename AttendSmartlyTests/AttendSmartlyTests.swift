@@ -327,6 +327,34 @@ final class AttendSmartlyTests: XCTestCase {
         XCTAssertEqual(Assignment.knownInstructors(subjectID: nil, kind: .practical, among: all), [])
     }
 
+    func testEveryGroupingPutsEachAssignmentInExactlyOneSection() throws {
+        let now = try XCTUnwrap(ISO8601DateFormatter().date(from: "2026-10-26T12:00:00Z"))
+        let day: TimeInterval = 86_400
+        let surgery = Subject(name: "Surgery")
+        let overdue = Assignment(title: "A", dueDate: now - 2 * day, subjectID: surgery.id)
+        let soon = Assignment(title: "B", dueDate: now + 1.5 * day, subjectID: surgery.id)
+        soon.kind = AssignmentKind.practical.rawValue
+        let later = Assignment(title: "C", dueDate: now + 9 * day, subjectID: UUID())
+        let open = [overdue, soon, later]
+
+        let due = AssignmentGrouping.due.sections(of: open, subjects: [surgery], now: now)
+        XCTAssertEqual(due.map(\.title), ["Overdue", "Due in the next 3 days", "Later"])
+        XCTAssertEqual(AssignmentGrouping.subject.sections(of: open, subjects: [surgery], now: now).map(\.title), ["Surgery", "No subject"])
+        XCTAssertEqual(AssignmentGrouping.type.sections(of: open, subjects: [surgery], now: now).map(\.title), ["Assignment", "Practical"])
+        for grouping in AssignmentGrouping.allCases {
+            let sections = grouping.sections(of: open, subjects: [surgery], now: now)
+            XCTAssertEqual(sections.flatMap(\.items).count, open.count, "\(grouping)")
+            XCTAssertEqual(Set(sections.map(\.id)).count, sections.count, "\(grouping)")
+        }
+
+        overdue.completedAt = now
+        soon.completedAt = now
+        XCTAssertEqual(
+            AssignmentGrouping.due.sections(of: [overdue, soon], subjects: [], now: now).map(\.title),
+            ["Handed in late", "Handed in on time"]
+        )
+    }
+
     func testAssignmentsSurviveBackupRoundTripWithoutDuplicates() throws {
         let container = try makeContainer()
         let context = ModelContext(container)

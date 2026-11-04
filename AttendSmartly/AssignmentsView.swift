@@ -25,10 +25,12 @@ struct AssignmentsView: View {
         let done = mine.filter { $0.isCompleted }
             .sorted { ($0.completedAt ?? .distantPast) > ($1.completedAt ?? .distantPast) }
 
-        // A plain stack rather than a List: List resizes rows on its own timeline, which
-        // made expanding cards overlap their neighbours mid-animation.
+        let items = showDone ? done : open
+
+        // A plain stack rather than a List (List resized rows out of step with their
+        // contents) and not a LazyVStack (it kept stale heights for expanded cards).
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 10) {
                 Picker("Show", selection: $showDone) {
                     Text("To do (\(open.count))").tag(false)
                     Text("Done (\(done.count))").tag(true)
@@ -36,30 +38,18 @@ struct AssignmentsView: View {
                 .pickerStyle(.segmented)
                 .padding(.bottom, 4)
 
-                let items = showDone ? done : open
                 if items.isEmpty {
                     if showDone {
                         empty("checkmark.circle", "Nothing finished yet", "Tick the circle on an assignment when you hand it in.")
                     } else {
                         empty("tray", "You're all caught up", "Tap + to add an assignment and its due date.")
                     }
-                } else if grouping == AssignmentGrouping.subject.rawValue {
-                    ForEach(subjects.filter { s in items.contains { $0.subjectID == s.id } }) { s in
-                        group(s.name, items.filter { $0.subjectID == s.id }, now: now, dot: s.colorValue)
-                    }
-                    group("No subject", items.filter { a in !subjects.contains { $0.id == a.subjectID } }, now: now)
-                } else if grouping == AssignmentGrouping.type.rawValue {
-                    ForEach(AssignmentKind.allCases) { kind in
-                        group(kind.rawValue, items.filter { $0.kindValue == kind }, now: now, symbol: kind.symbol)
-                    }
-                } else if showDone {
-                    group("Handed in late", done.filter { if case .doneLate = $0.status(now: now) { return true }; return false }, now: now)
-                    group("Handed in on time", done.filter { $0.status(now: now) == .doneOnTime }, now: now)
                 } else {
-                    group("Overdue", open.filter { if case .overdue = $0.status(now: now) { return true }; return false }, now: now)
-                    group("Due today", open.filter { $0.status(now: now) == .dueToday }, now: now)
-                    group("Due in the next 3 days", open.filter { $0.status(now: now) == .dueSoon }, now: now)
-                    group("Later", open.filter { $0.status(now: now) == .upcoming }, now: now)
+                    let grouped = AssignmentGrouping(rawValue: grouping) ?? .due
+                    ForEach(grouped.sections(of: items, subjects: subjects, now: now)) { section in
+                        header(section)
+                        ForEach(section.items) { row($0, now: now) }
+                    }
                 }
             }
             .padding()
@@ -97,21 +87,18 @@ struct AssignmentsView: View {
         }
     }
 
-    @ViewBuilder
-    private func group(_ title: String, _ items: [Assignment], now: Date, dot: Int? = nil, symbol: String? = nil) -> some View {
-        if !items.isEmpty {
-            HStack(spacing: 6) {
-                if let dot { Circle().fill(Pastel.subjectStrong(dot)).frame(width: 10, height: 10) }
-                if let symbol { Image(systemName: symbol) }
-                Text(title)
-                Text("\(items.count)").opacity(0.5)
-            }
-            .font(.system(.subheadline, design: .rounded).weight(.bold))
-            .foregroundStyle(Pastel.ink)
-            .padding(.leading, 4)
-            .padding(.top, 10)
-            ForEach(items) { row($0, now: now) }
+    private func header(_ section: AssignmentSection) -> some View {
+        HStack(spacing: 6) {
+            if let dot = section.dot { Circle().fill(Pastel.subjectStrong(dot)).frame(width: 10, height: 10) }
+            if let symbol = section.symbol { Image(systemName: symbol) }
+            Text(section.title)
+            Text("\(section.items.count)").opacity(0.5)
         }
+        .font(.system(.subheadline, design: .rounded).weight(.bold))
+        .foregroundStyle(Pastel.ink)
+        .padding(.leading, 4)
+        .padding(.top, 10)
+        .accessibilityAddTraits(.isHeader)
     }
 
     private func row(_ assignment: Assignment, now: Date) -> some View {
@@ -158,6 +145,43 @@ enum AssignmentGrouping: String, CaseIterable, Identifiable {
         case .type: return "Type"
         }
     }
+
+    /// The headed groups shown in the list, empty ones left out. `items` is either all
+    /// open or all done assignments, already in display order.
+    func sections(of items: [Assignment], subjects: [Subject], now: Date) -> [AssignmentSection] {
+        func by(_ title: String, _ match: (AssignmentStatus) -> Bool) -> AssignmentSection {
+            AssignmentSection(id: title, title: title, items: items.filter { match($0.status(now: now)) })
+        }
+        let all: [AssignmentSection]
+        switch self {
+        case .subject:
+            all = subjects.map { s in
+                AssignmentSection(id: s.id.uuidString, title: s.name, dot: s.colorValue, items: items.filter { $0.subjectID == s.id })
+            } + [AssignmentSection(id: "none", title: "No subject", items: items.filter { a in !subjects.contains { $0.id == a.subjectID } })]
+        case .type:
+            all = AssignmentKind.allCases.map { kind in
+                AssignmentSection(id: kind.rawValue, title: kind.rawValue, symbol: kind.symbol, items: items.filter { $0.kindValue == kind })
+            }
+        case .due:
+            all = [
+                by("Overdue") { if case .overdue = $0 { return true }; return false },
+                by("Due today") { $0 == .dueToday },
+                by("Due in the next 3 days") { $0 == .dueSoon },
+                by("Later") { $0 == .upcoming },
+                by("Handed in late") { if case .doneLate = $0 { return true }; return false },
+                by("Handed in on time") { $0 == .doneOnTime }
+            ]
+        }
+        return all.filter { !$0.items.isEmpty }
+    }
+}
+
+struct AssignmentSection: Identifiable {
+    let id: String
+    let title: String
+    var dot: Int? = nil
+    var symbol: String? = nil
+    let items: [Assignment]
 }
 
 // MARK: - Row
@@ -275,6 +299,7 @@ struct AssignmentFormView: View {
     @State private var showNewSubject = false
     /// The instructor the app last filled in, so it can be swapped while you haven't typed your own.
     @State private var autoInstructor = ""
+    @State private var didAppear = false
     @State private var subjectID: UUID?
     @State private var assigned: Date
     @State private var customDue: Bool
@@ -346,18 +371,6 @@ struct AssignmentFormView: View {
                           ? "Shows as \(AssignmentKind.display(kind: kind, number: number, title: title.trimmingCharacters(in: .whitespacesAndNewlines))). "
                           : "") + "A new subject added here has no classes until you put it in your timetable.")
                 }
-                .onChange(of: kind) {
-                    renumber()
-                    recommendInstructor()
-                }
-                .onChange(of: subjectID) {
-                    renumber()
-                    recommendInstructor()
-                }
-                .onAppear {
-                    renumber()
-                    recommendInstructor()
-                }
 
                 Section {
                     DatePicker("Assigned on", selection: $assigned, displayedComponents: .date)
@@ -373,9 +386,6 @@ struct AssignmentFormView: View {
                     Text(customDue
                          ? "This one has its own due date."
                          : "Due \(deadlineDays) days after it was set, at the end of that day. Change the usual length in Settings → Assignments.")
-                }
-                .onChange(of: customDue) { _, isCustom in
-                    if isCustom { due = Assignment.dueDate(assignedOn: assigned, days: deadlineDays) }
                 }
 
                 Section {
@@ -403,6 +413,28 @@ struct AssignmentFormView: View {
                         }
                     }
                 }
+            }
+            // On the Form, not a Section: Form rows load lazily, so a Section's onAppear
+            // ran again whenever it scrolled back into view and reset a hand-set number.
+            .onAppear {
+                guard !didAppear else { return }
+                didAppear = true
+                renumber()
+                recommendInstructor()
+            }
+            .onChange(of: kind) {
+                renumber()
+                recommendInstructor()
+            }
+            .onChange(of: subjectID) {
+                renumber()
+                recommendInstructor()
+            }
+            .onChange(of: customDue) { _, isCustom in
+                if isCustom { due = Assignment.dueDate(assignedOn: assigned, days: deadlineDays) }
+            }
+            .onChange(of: assigned) {
+                if customDue && due < assigned { due = Assignment.dueDate(assignedOn: assigned, days: deadlineDays) }
             }
             .sheet(isPresented: $showNewSubject) {
                 SubjectFormView(subject: nil) { s in
