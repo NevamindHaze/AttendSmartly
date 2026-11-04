@@ -15,6 +15,7 @@ struct AssignmentsView: View {
     @State private var editing: Assignment?
     @State private var showNew = false
     @State private var toDelete: Assignment?
+    @AppStorage(PrefKey.assignmentGrouping) private var grouping = AssignmentGrouping.due.rawValue
 
     var body: some View {
         let now = Date()
@@ -43,6 +44,15 @@ struct AssignmentsView: View {
                 }
             } else if open.isEmpty {
                 empty("tray", "You're all caught up", "Tap + to add an assignment and its due date.")
+            } else if grouping == AssignmentGrouping.subject.rawValue {
+                ForEach(subjects.filter { s in open.contains { $0.subjectID == s.id } }) { s in
+                    group(s.name, open.filter { $0.subjectID == s.id }, now: now)
+                }
+                group("No subject", open.filter { a in !subjects.contains { $0.id == a.subjectID } }, now: now)
+            } else if grouping == AssignmentGrouping.type.rawValue {
+                ForEach(AssignmentKind.allCases) { kind in
+                    group(kind.rawValue, open.filter { $0.kindValue == kind }, now: now)
+                }
             } else {
                 group("Overdue", open.filter { if case .overdue = $0.status(now: now) { return true }; return false }, now: now)
                 group("Due today", open.filter { $0.status(now: now) == .dueToday }, now: now)
@@ -55,6 +65,15 @@ struct AssignmentsView: View {
         .background(Pastel.background)
         .navigationTitle("Assignments")
         .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Menu {
+                    Picker("Group by", selection: $grouping) {
+                        ForEach(AssignmentGrouping.allCases) { Text($0.label).tag($0.rawValue) }
+                    }
+                } label: {
+                    Label("Group by", systemImage: "line.3.horizontal.decrease.circle")
+                }
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 Button { showNew = true } label: { Label("Add assignment", systemImage: "plus") }
             }
@@ -116,6 +135,18 @@ struct AssignmentsView: View {
     }
 }
 
+enum AssignmentGrouping: String, CaseIterable, Identifiable {
+    case due, subject, type
+    var id: String { rawValue }
+    var label: String {
+        switch self {
+        case .due: return "Due date"
+        case .subject: return "Subject"
+        case .type: return "Type"
+        }
+    }
+}
+
 // MARK: - Row
 
 struct AssignmentRow: View {
@@ -139,14 +170,23 @@ struct AssignmentRow: View {
             .accessibilityLabel(assignment.isCompleted ? "Mark as not done" : "Mark as done")
 
             VStack(alignment: .leading, spacing: 6) {
-                Text(assignment.title)
+                Text(assignment.displayTitle)
                     .font(.system(.headline, design: .rounded).weight(.bold))
                     .strikethrough(assignment.isCompleted, color: Pastel.ink.opacity(0.5))
-                if let subject {
-                    HStack(spacing: 6) {
+                HStack(spacing: 6) {
+                    Label(assignment.kindValue.rawValue, systemImage: assignment.kindValue.symbol)
+                    if let subject {
+                        Text("·")
                         Circle().fill(Pastel.subjectStrong(subject.colorValue)).frame(width: 8, height: 8)
-                        Text(subject.name).font(.footnote.weight(.medium)).opacity(0.75)
+                        Text(subject.name)
                     }
+                }
+                .font(.footnote.weight(.medium))
+                .opacity(0.75)
+                if !assignment.instructor.isEmpty {
+                    Label(assignment.instructor, systemImage: "person")
+                        .font(.footnote)
+                        .opacity(0.75)
                 }
                 Label("Due \(AssignmentFormat.due(assignment.dueDate, now: now))", systemImage: "calendar")
                     .font(.footnote)
@@ -180,10 +220,15 @@ struct AssignmentFormView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @Query(sort: \Subject.name) private var subjects: [Subject]
+    @Query private var allAssignments: [Assignment]
+    @AppStorage(PrefKey.assignmentAutoNumber) private var autoNumber = true
 
     let assignment: Assignment?
 
     @State private var title: String
+    @State private var kind: AssignmentKind
+    @State private var number: Int
+    @State private var instructor: String
     @State private var subjectID: UUID?
     @State private var assigned: Date
     @State private var customDue: Bool
@@ -199,6 +244,9 @@ struct AssignmentFormView: View {
         let assigned = assignment?.assignedDate ?? Date()
         _title = State(initialValue: assignment?.title ?? "")
         _subjectID = State(initialValue: assignment?.subjectID ?? defaultSubject)
+        _kind = State(initialValue: assignment?.kindValue ?? .assignment)
+        _number = State(initialValue: assignment?.number ?? 0)
+        _instructor = State(initialValue: assignment?.instructor ?? "")
         _assigned = State(initialValue: assigned)
         _customDue = State(initialValue: assignment?.hasCustomDue ?? false)
         _due = State(initialValue: assignment?.dueDate
@@ -218,14 +266,38 @@ struct AssignmentFormView: View {
         NavigationStack {
             Form {
                 Section {
-                    TextField("What's the assignment?", text: $title, axis: .vertical)
+                    TextField(number > 0 ? "Title (optional)" : "What's the assignment?", text: $title, axis: .vertical)
                         .font(.headline)
+                    Picker("Type", selection: $kind) {
+                        ForEach(AssignmentKind.allCases) { Label($0.rawValue, systemImage: $0.symbol).tag($0) }
+                    }
                     Picker("Subject", selection: $subjectID) {
                         Text("None").tag(UUID?.none)
                         ForEach(subjects.filter { !$0.isArchived || $0.id == subjectID }) { s in
                             Text(s.name).tag(Optional(s.id))
                         }
                     }
+                    Stepper(number > 0 ? "Number: \(number)" : "Not numbered", value: $number, in: 0...999)
+                    TextField("Course instructor", text: $instructor)
+                        .textContentType(.name)
+                } footer: {
+                    if number > 0 {
+                        Text("Shows as \(AssignmentKind.display(kind: kind, number: number, title: title.trimmingCharacters(in: .whitespacesAndNewlines))).")
+                    }
+                }
+                .onChange(of: kind) { renumber() }
+                .onChange(of: subjectID) { old, new in
+                    renumber()
+                    // Follow the subject's teacher unless it was typed by hand.
+                    let oldTeacher = subjects.first { $0.id == old }?.teacherName ?? ""
+                    if instructor.isEmpty || instructor == oldTeacher {
+                        instructor = subjects.first { $0.id == new }?.teacherName ?? ""
+                    }
+                }
+                .onAppear {
+                    guard assignment == nil else { return }
+                    renumber()
+                    if instructor.isEmpty { instructor = subjects.first { $0.id == subjectID }?.teacherName ?? "" }
                 }
 
                 Section {
@@ -279,15 +351,24 @@ struct AssignmentFormView: View {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") { save() }
-                        .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && number == 0)
                 }
             }
         }
     }
 
+    /// New items only: an existing number is never changed behind your back.
+    private func renumber() {
+        guard assignment == nil, autoNumber else { return }
+        number = Assignment.nextNumber(subjectID: subjectID, kind: kind, among: allAssignments)
+    }
+
     private func save() {
         let target = assignment ?? Assignment(title: "", dueDate: effectiveDue)
         target.title = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        target.kind = kind.rawValue
+        target.number = number
+        target.instructor = instructor.trimmingCharacters(in: .whitespacesAndNewlines)
         target.subjectID = subjectID
         target.assignedDate = Calendar.current.startOfDay(for: assigned)
         target.hasCustomDue = customDue
@@ -351,7 +432,7 @@ struct HomeAssignmentsCard: View {
                             Circle()
                                 .fill(status.tint)
                                 .frame(width: 8, height: 8)
-                            Text(next.title)
+                            Text(next.displayTitle)
                                 .font(.subheadline.weight(.semibold))
                                 .lineLimit(1)
                             Spacer(minLength: 4)

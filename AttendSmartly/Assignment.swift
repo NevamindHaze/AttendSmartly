@@ -18,6 +18,12 @@ final class Assignment {
     /// When it was marked done. nil while it's still to do.
     var completedAt: Date?
     var createdAt: Date = Date()
+    /// AssignmentKind raw value, stored as text so new kinds never break old data.
+    var kind: String = AssignmentKind.assignment.rawValue
+    /// "Practical 3". 0 means it isn't numbered.
+    var number: Int = 0
+    /// Who set it. Starts as the subject's teacher.
+    var instructor: String = ""
 
     init(title: String, dueDate: Date, subjectID: UUID? = nil, assignedDate: Date? = nil) {
         self.title = title
@@ -47,8 +53,51 @@ final class Assignment {
 
     var isCompleted: Bool { completedAt != nil }
 
+    var kindValue: AssignmentKind { AssignmentKind(rawValue: kind) ?? .other }
+
+    /// "Practical 3: Titration", "Practical 3" or just the title.
+    var displayTitle: String { AssignmentKind.display(kind: kindValue, number: number, title: title) }
+
+    /// The number after the highest one already used for this subject and kind.
+    static func nextNumber(subjectID: UUID?, kind: AssignmentKind, among existing: [Assignment], excluding: Assignment? = nil) -> Int {
+        let used = existing
+            .filter { $0 !== excluding && $0.subjectID == subjectID && $0.kindValue == kind }
+            .map(\.number)
+        return (used.max() ?? 0) + 1
+    }
+
     func status(now: Date = Date()) -> AssignmentStatus {
         AssignmentStatus.of(due: dueDate, completedAt: completedAt, now: now)
+    }
+}
+
+enum AssignmentKind: String, CaseIterable, Identifiable {
+    case assignment = "Assignment"
+    case practical = "Practical"
+    case labReport = "Lab report"
+    case project = "Project"
+    case presentation = "Presentation"
+    case quiz = "Quiz"
+    case other = "Other"
+
+    var id: String { rawValue }
+
+    var symbol: String {
+        switch self {
+        case .assignment: return "doc.text"
+        case .practical: return "flask"
+        case .labReport: return "doc.richtext"
+        case .project: return "hammer"
+        case .presentation: return "person.wave.2"
+        case .quiz: return "questionmark.circle"
+        case .other: return "tray"
+        }
+    }
+
+    static func display(kind: AssignmentKind, number: Int, title: String) -> String {
+        guard number > 0 else { return title }
+        let label = kind == .other ? "#\(number)" : "\(kind.rawValue) \(number)"
+        return title.isEmpty ? label : "\(label): \(title)"
     }
 }
 

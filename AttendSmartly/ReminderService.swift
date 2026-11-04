@@ -51,12 +51,12 @@ enum ReminderService {
 
             let eveBefore = calendar.date(byAdding: .day, value: -1, to: dueDay)
                 .flatMap { calendar.date(bySettingHour: 18, minute: 0, second: 0, of: $0) }
-            add("eve", "Due tomorrow: \(a.title)", "\(detail)Due tomorrow at \(time)", eveBefore)
+            add("eve", "Due tomorrow: \(a.displayTitle)", "\(detail)Due tomorrow at \(time)", eveBefore)
 
             let morning = calendar.date(bySettingHour: 9, minute: 0, second: 0, of: dueDay)
-            add("morning", "Due today: \(a.title)", "\(detail)Hand it in by \(time)", morning)
+            add("morning", "Due today: \(a.displayTitle)", "\(detail)Hand it in by \(time)", morning)
 
-            add("hour", "Due in 1 hour: \(a.title)", "\(detail)Hand it in by \(time)", a.dueDate.addingTimeInterval(-3600))
+            add("hour", "Due in 1 hour: \(a.displayTitle)", "\(detail)Hand it in by \(time)", a.dueDate.addingTimeInterval(-3600))
         }
         return result.sorted { $0.fireDate < $1.fireDate }
     }

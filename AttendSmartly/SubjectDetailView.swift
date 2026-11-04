@@ -158,7 +158,7 @@ struct SubjectDetailView: View {
                         let status = assignment.status(now: now)
                         HStack(spacing: 8) {
                             Image(systemName: status.symbol).foregroundStyle(status.tint)
-                            Text(assignment.title).font(.subheadline.weight(.semibold)).lineLimit(1)
+                            Text(assignment.displayTitle).font(.subheadline.weight(.semibold)).lineLimit(1)
                             Spacer(minLength: 4)
                             Text(assignment.dueDate < now ? status.label : AssignmentFormat.due(assignment.dueDate, now: now))
                                 .font(.caption).opacity(0.75).lineLimit(1)

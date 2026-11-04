@@ -8,6 +8,8 @@ enum PrefKey {
     static let remindersEnabled = "remindersEnabled"
     static let assignmentRemindersEnabled = "assignmentRemindersEnabled"
     static let assignmentDeadlineDays = "assignmentDeadlineDays"
+    static let assignmentAutoNumber = "assignmentAutoNumber"
+    static let assignmentGrouping = "assignmentGrouping"
 }
 
 /// Optional date window that limits which sessions count towards attendance
